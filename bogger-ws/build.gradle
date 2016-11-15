@@ -1,0 +1,43 @@
+group 'io.fries'
+version '0.1-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'com.sparkjava:spark-core:2.5.2'
+    compile 'org.slf4j:slf4j-simple:1.7.21'
+    compile 'com.google.code.gson:gson:2.8.0'
+
+    testCompile 'junit:junit:4.11'
+}
+
+processResources {
+    filesMatching('**/application.properties') {
+        expand project.properties
+    }
+}
+
+mainClassName = 'io.fries.bogger.ws.Application'
+if(!hasProperty('mainClass')) {
+    ext.mainClass = mainClassName
+}
+
+// Standalone JAR config
+jar {
+    manifest {
+        attributes 'Main-Class': mainClassName
+    }
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+}
