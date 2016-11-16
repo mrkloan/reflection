@@ -1,6 +1,6 @@
 rootProject.name = 'bogger'
 
-include 'bogger-annotations'
+include 'spark-annotations'
 include 'bogger-ws'
 rootProject.name = 'bogger'
 
