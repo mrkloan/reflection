@@ -1,0 +1,6 @@
+rootProject.name = 'bogger'
+
+include 'bogger-annotations'
+include 'bogger-ws'
+rootProject.name = 'bogger'
+
