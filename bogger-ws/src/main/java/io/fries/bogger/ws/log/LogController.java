@@ -15,7 +15,7 @@ public class LogController {
 	@SparkInject
 	private LogService logService;
 
-	@SparkRoute(path = "/hello")
+	@SparkRoute(path = "/", contentType = "text/plain")
 	private ApiResponse getHelloMessage(Request req, Response res) {
 		try {
 			return new ApiResponse.Builder(req, res).data(logService.hello()).build();

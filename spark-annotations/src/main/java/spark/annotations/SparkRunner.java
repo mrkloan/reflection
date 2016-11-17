@@ -7,6 +7,8 @@ import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
+import spark.ResponseTransformer;
+import spark.Route;
 import spark.Spark;
 
 import java.lang.reflect.Field;
@@ -70,48 +72,101 @@ public final class SparkRunner {
 		for(Class<?> componentClass : sparkComponents) {
 			Object component = SparkComponentStore.get(componentClass);
 
-			// Inject components in annotated fields
-			Field[] fields = componentClass.getDeclaredFields();
+			injectFields(component, componentClass);
+			if(componentClass.isAnnotationPresent(SparkController.class))
+				injectRoutes(component, componentClass);
+		}
+	}
 
-			for(Field field : fields) {
-				boolean accessible = field.isAccessible();
+	private void injectFields(Object component, Class<?> componentClass) {
+		Field[] fields = componentClass.getDeclaredFields();
+
+		for(Field field : fields) {
+			if(!field.isAnnotationPresent(SparkInject.class))
+				continue;
+
+			boolean accessible = field.isAccessible();
+
+			try {
+				Object value = SparkComponentStore.get(field.getType());
+
 				field.setAccessible(true);
+				field.set(component, value);
 
-				if(field.isAnnotationPresent(SparkInject.class)) {
-					try {
-						Object value = SparkComponentStore.get(field.getType());
-						field.set(component, value);
-
-						System.out.println(component + "." + field.getName() + " = " + value);
-					}
-					catch(IllegalAccessException e) {
-						e.printStackTrace();
-					}
-				}
-
+				System.out.println(component + "." + field.getName() + " = " + value);
+			}
+			catch(IllegalAccessException e) {
+				e.printStackTrace();
+			}
+			finally {
 				field.setAccessible(accessible);
 			}
+		}
+	}
 
-			// Inject annotated route methods
-			if(componentClass.isAnnotationPresent(SparkController.class)) {
-				Method[] methods = componentClass.getDeclaredMethods();
+	/**
+	 * TODO: ResponseTransformers ? @SparkBefore, @SparkAfter.
+	 * @param component
+	 * @param componentClass
+	 */
+	private void injectRoutes(Object component, Class<?> componentClass) {
+		Method[] methods = componentClass.getDeclaredMethods();
 
-				for(Method method : methods) {
-					SparkRoute route;
-					boolean accessible = method.isAccessible();
-					method.setAccessible(true);
+		for(Method method : methods) {
+			SparkRoute sparkRoute;
 
-					if((route = method.getAnnotation(SparkRoute.class)) != null) {
-						switch (route.method()) {
-							default:
-								Spark.get(route.path(), (req, res) -> method.invoke(component, req, res));
-						}
-					}
+			if((sparkRoute = method.getAnnotation(SparkRoute.class)) == null)
+				continue;
 
-					method.setAccessible(accessible);
-				}
+			System.out.println("Initializing route: " + method.getName() + " (" + sparkRoute.path() + ")...");
+			Route routeLambda = createSparkRoute(component, sparkRoute, method);
+			method.setAccessible(true);
+
+			switch(sparkRoute.method()) {
+				case POST:
+					Spark.post(sparkRoute.path(), routeLambda);
+					break;
+				case PUT:
+					Spark.put(sparkRoute.path(), routeLambda);
+					break;
+				case PATCH:
+					Spark.patch(sparkRoute.path(), routeLambda);
+					break;
+				case DELETE:
+					Spark.delete(sparkRoute.path(), routeLambda);
+					break;
+				case HEAD:
+					Spark.head(sparkRoute.path(), routeLambda);
+					break;
+				case TRACE:
+					Spark.trace(sparkRoute.path(), routeLambda);
+					break;
+				case CONNECT:
+					Spark.connect(sparkRoute.path(), routeLambda);
+					break;
+				case OPTIONS:
+					Spark.options(sparkRoute.path(), routeLambda);
+					break;
+				default:
+					Spark.get(sparkRoute.path(), routeLambda);
 			}
 		}
+	}
+
+	private Route createSparkRoute(Object component, SparkRoute sparkRoute, Method method) {
+		return (req, res) -> {
+			try {
+				if(!sparkRoute.accept().isEmpty())
+					res.header("Accept", sparkRoute.accept());
+				res.type(sparkRoute.contentType());
+
+				return method.invoke(component, req, res);
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+				return null;
+			}
+		};
 	}
 
 	public static SparkRunner startApplication(Class<?> applicationClass) {

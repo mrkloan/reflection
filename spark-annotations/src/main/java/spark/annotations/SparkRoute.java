@@ -8,7 +8,10 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SparkRoute {
+	enum HttpMethod { GET, POST, PUT, PATCH, DELETE, HEAD, TRACE, CONNECT, OPTIONS }
+
 	String path();
-	String produces() default "application/json";
-	String method() default "GET";
+	String accept() default "";
+	String contentType() default "application/json";
+	HttpMethod method() default HttpMethod.GET;
 }

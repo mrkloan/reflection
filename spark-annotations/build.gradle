@@ -5,5 +5,7 @@ targetCompatibility = 1.8
 
 dependencies {
     compile 'com.sparkjava:spark-core:2.5.2'
+    compile 'org.slf4j:slf4j-simple:1.7.21'
+
     compile 'org.reflections:reflections:0.9.10'
 }
