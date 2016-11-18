@@ -1,6 +1,6 @@
 package io.fries.bogger.ws.log;
 
-import spark.annotations.SparkComponent;
+import spark.runner.annotations.SparkComponent;
 
 @SparkComponent
 public class LogService {

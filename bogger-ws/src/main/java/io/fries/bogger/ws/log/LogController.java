@@ -4,10 +4,10 @@ import io.fries.bogger.ws.Application;
 import io.fries.bogger.ws.core.ApiResponse;
 import spark.Request;
 import spark.Response;
-import spark.annotations.SparkComponent;
-import spark.annotations.SparkController;
-import spark.annotations.SparkInject;
-import spark.annotations.SparkRoute;
+import spark.runner.annotations.SparkComponent;
+import spark.runner.annotations.SparkController;
+import spark.runner.annotations.SparkInject;
+import spark.runner.annotations.SparkRoute;
 
 @SparkComponent
 @SparkController

@@ -1,4 +1,4 @@
-package spark.annotations;
+package spark.runner;
 
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
@@ -9,6 +9,7 @@ import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 import spark.Route;
 import spark.Spark;
+import spark.runner.annotations.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;

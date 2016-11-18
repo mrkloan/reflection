@@ -1,4 +1,4 @@
-package spark.annotations;
+package spark.runner;
 
 class SparkRunnerException extends Exception {
 

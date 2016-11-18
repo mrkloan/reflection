@@ -1,8 +1,8 @@
 package io.fries.bogger.ws;
 
 import com.google.gson.Gson;
-import spark.annotations.SparkApplication;
-import spark.annotations.SparkRunner;
+import spark.runner.annotations.SparkApplication;
+import spark.runner.SparkRunner;
 
 @SparkApplication
 public class Application {

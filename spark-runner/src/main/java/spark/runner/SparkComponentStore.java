@@ -1,4 +1,4 @@
-package spark.annotations;
+package spark.runner;
 
 import java.util.HashMap;
 import java.util.Map;
