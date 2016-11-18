@@ -88,6 +88,9 @@ public final class SparkRunner implements Runnable {
 		return SparkComponentStore.put(resourceBundle);
 	}
 
+	/**
+	 * @return The configured reflection engine used to gather classes using their annotations.
+	 */
 	private Reflections getReflectionEngine() {
 		return new Reflections(
 			new ConfigurationBuilder()
@@ -103,6 +106,10 @@ public final class SparkRunner implements Runnable {
 		);
 	}
 
+	/**
+	 * @param reflections The reflection engine.
+	 * @return A set of classes annotated using either the {@code SparkComponent} or {@code SparkController} annotations.
+	 */
 	private Set<Class<?>> scanApplicationComponents(Reflections reflections) {
 		Set<Class<?>> components = reflections.getTypesAnnotatedWith(SparkComponent.class);
 		Set<Class<?>> controllers = reflections.getTypesAnnotatedWith(SparkController.class);
@@ -111,6 +118,10 @@ public final class SparkRunner implements Runnable {
 		return components;
 	}
 
+	/**
+	 * @param reflections The reflection engine.
+	 * @return A set of classes annotated using the {@code SparkWebSocket} annotation.
+	 */
 	private Set<Class<?>> scanApplicationWebSockets(Reflections reflections) {
 		return reflections.getTypesAnnotatedWith(SparkWebSocket.class);
 	}
@@ -220,42 +231,48 @@ public final class SparkRunner implements Runnable {
 	private void injectRoutes(Object component, SparkController sparkController, Class<?> componentClass) {
 		Method[] methods = componentClass.getDeclaredMethods();
 
+		String controllerPath = sparkController.path();
+		if(controllerPath.endsWith("/"))
+			controllerPath = controllerPath.substring(0, controllerPath.length() - 1);
+
 		for(Method method : methods) {
 			SparkRoute sparkRoute;
 
 			if((sparkRoute = method.getAnnotation(SparkRoute.class)) == null)
 				continue;
 
+			String routePath = controllerPath + sparkRoute.path();
+
 			Route routeLambda = createSparkRoute(component, sparkRoute, method);
 			method.setAccessible(true);
 
 			switch(sparkRoute.method()) {
 				case POST:
-					Spark.post(sparkRoute.path(), routeLambda);
+					Spark.post(routePath, routeLambda);
 					break;
 				case PUT:
-					Spark.put(sparkRoute.path(), routeLambda);
+					Spark.put(routePath, routeLambda);
 					break;
 				case PATCH:
-					Spark.patch(sparkRoute.path(), routeLambda);
+					Spark.patch(routePath, routeLambda);
 					break;
 				case DELETE:
-					Spark.delete(sparkRoute.path(), routeLambda);
+					Spark.delete(routePath, routeLambda);
 					break;
 				case HEAD:
-					Spark.head(sparkRoute.path(), routeLambda);
+					Spark.head(routePath, routeLambda);
 					break;
 				case TRACE:
-					Spark.trace(sparkRoute.path(), routeLambda);
+					Spark.trace(routePath, routeLambda);
 					break;
 				case CONNECT:
-					Spark.connect(sparkRoute.path(), routeLambda);
+					Spark.connect(routePath, routeLambda);
 					break;
 				case OPTIONS:
-					Spark.options(sparkRoute.path(), routeLambda);
+					Spark.options(routePath, routeLambda);
 					break;
 				default:
-					Spark.get(sparkRoute.path(), routeLambda);
+					Spark.get(routePath, routeLambda);
 			}
 		}
 	}
