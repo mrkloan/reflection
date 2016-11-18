@@ -16,6 +16,7 @@ import spark.runner.annotations.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
 
@@ -39,7 +40,7 @@ public final class SparkRunner {
 			initApplication();
 
 			this.applicationProperties = initResourceBundle();
-			configureApplication(applicationProperties);
+			new SparkConfiguration(applicationProperties).run();
 
 			this.sparkComponents = scanApplicationComponents();
 			storeComponents(sparkComponents);
@@ -71,13 +72,6 @@ public final class SparkRunner {
 		if(resourceBundle == null)
 			throw new SparkRunnerException("Application ResourceBundle cannot be null.");
 		return SparkComponentStore.put(resourceBundle);
-	}
-
-	/**
-	 * TODO
-	 */
-	private void configureApplication(ResourceBundle applicationProperties) {
-
 	}
 
 	/**
