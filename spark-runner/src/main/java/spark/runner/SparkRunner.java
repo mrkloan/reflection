@@ -9,6 +9,7 @@ import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.ResponseTransformer;
 import spark.Route;
 import spark.Spark;
 import spark.runner.annotations.*;
@@ -241,38 +242,44 @@ public final class SparkRunner implements Runnable {
 			if((sparkRoute = method.getAnnotation(SparkRoute.class)) == null)
 				continue;
 
-			String routePath = controllerPath + sparkRoute.path();
+			try {
+				String routePath = controllerPath + sparkRoute.path();
+				Route routeLambda = createSparkRoute(component, sparkRoute, method);
+				ResponseTransformer routeTransformer = (ResponseTransformer)createClassInstance(sparkRoute.transformer());
 
-			Route routeLambda = createSparkRoute(component, sparkRoute, method);
-			method.setAccessible(true);
+				method.setAccessible(true);
 
-			switch(sparkRoute.method()) {
-				case POST:
-					Spark.post(routePath, routeLambda);
-					break;
-				case PUT:
-					Spark.put(routePath, routeLambda);
-					break;
-				case PATCH:
-					Spark.patch(routePath, routeLambda);
-					break;
-				case DELETE:
-					Spark.delete(routePath, routeLambda);
-					break;
-				case HEAD:
-					Spark.head(routePath, routeLambda);
-					break;
-				case TRACE:
-					Spark.trace(routePath, routeLambda);
-					break;
-				case CONNECT:
-					Spark.connect(routePath, routeLambda);
-					break;
-				case OPTIONS:
-					Spark.options(routePath, routeLambda);
-					break;
-				default:
-					Spark.get(routePath, routeLambda);
+				switch (sparkRoute.method()) {
+					case POST:
+						Spark.post(routePath, routeLambda, routeTransformer);
+						break;
+					case PUT:
+						Spark.put(routePath, routeLambda, routeTransformer);
+						break;
+					case PATCH:
+						Spark.patch(routePath, routeLambda, routeTransformer);
+						break;
+					case DELETE:
+						Spark.delete(routePath, routeLambda, routeTransformer);
+						break;
+					case HEAD:
+						Spark.head(routePath, routeLambda, routeTransformer);
+						break;
+					case TRACE:
+						Spark.trace(routePath, routeLambda, routeTransformer);
+						break;
+					case CONNECT:
+						Spark.connect(routePath, routeLambda, routeTransformer);
+						break;
+					case OPTIONS:
+						Spark.options(routePath, routeLambda, routeTransformer);
+						break;
+					default:
+						Spark.get(routePath, routeLambda, routeTransformer);
+				}
+			}
+			catch(SparkRunnerException e) {
+				logger.error(e.getMessage(), e);
 			}
 		}
 	}

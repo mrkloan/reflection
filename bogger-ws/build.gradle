@@ -6,7 +6,6 @@ targetCompatibility = 1.8
 
 dependencies {
     compile project(':spark-runner')
-    compile 'com.google.code.gson:gson:2.8.0'
 
     testCompile 'junit:junit:4.11'
 }

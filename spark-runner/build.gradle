@@ -4,8 +4,13 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
+    // Spark core
     compile 'com.sparkjava:spark-core:2.5.2'
     compile 'org.slf4j:slf4j-simple:1.7.21'
 
+    // Reflection libs
     compile 'org.reflections:reflections:0.9.10'
+
+    // Transformers libs
+    compile 'com.google.code.gson:gson:2.8.0'
 }

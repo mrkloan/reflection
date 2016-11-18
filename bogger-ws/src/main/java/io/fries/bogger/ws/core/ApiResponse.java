@@ -12,12 +12,12 @@ public class ApiResponse implements Serializable {
 
 	private final Object data;
 	private final Map<String, String> links;
-	private final Date timestamp;
+	private final long timestamp;
 
 	private ApiResponse(Builder builder) {
 		this.data = builder.data;
 		this.links = builder.links;
-		this.timestamp = new Date();
+		this.timestamp = new Date().getTime();
 	}
 
 	public Object getData() {
@@ -28,7 +28,7 @@ public class ApiResponse implements Serializable {
 		return links;
 	}
 
-	public Date getTimestamp() {
+	public long getTimestamp() {
 		return timestamp;
 	}
 
