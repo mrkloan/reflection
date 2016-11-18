@@ -9,8 +9,7 @@ import spark.runner.annotations.SparkController;
 import spark.runner.annotations.SparkInject;
 import spark.runner.annotations.SparkRoute;
 
-@SparkComponent
-@SparkController
+@SparkController(path = "/log")
 public class LogController {
 
 	@SparkInject

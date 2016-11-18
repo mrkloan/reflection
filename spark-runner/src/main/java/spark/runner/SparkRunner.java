@@ -16,17 +16,13 @@ import spark.runner.annotations.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-public final class SparkRunner {
+public final class SparkRunner implements Runnable {
 
 	private final Logger logger;
 	private final Class applicationClass;
-
-	private ResourceBundle applicationProperties;
-	private Set<Class<?>> sparkComponents;
 
 	/**
 	 * Create a new SparkRunner object which will take care of all the application initialisation and configuration.
@@ -35,16 +31,34 @@ public final class SparkRunner {
 	private SparkRunner(Class applicationClass, Logger logger) {
 		this.logger = logger;
 		this.applicationClass = applicationClass;
+	}
 
+	@Override
+	public void run() {
 		try {
 			initApplication();
 
-			this.applicationProperties = initResourceBundle();
+			// Configure the application
+			ResourceBundle applicationProperties = initResourceBundle();
 			new SparkConfiguration(applicationProperties).run();
 
-			this.sparkComponents = scanApplicationComponents();
-			storeComponents(sparkComponents);
-			processInjections(sparkComponents);
+			// Gather all the application classes using reflection
+			Reflections reflections = getReflectionEngine();
+
+			Set<Class<?>> components = scanApplicationComponents(reflections);
+			storeComponents(components);
+
+			Set<Class<?>> webSockets = scanApplicationWebSockets(reflections);
+			storeComponents(webSockets);
+
+			// WebSockets need to be initialized first
+			processWebSocketsInjection(webSockets);
+
+			// Then we can register other components
+			processComponentsInjection(components);
+
+			// Wait for the server initialization before proceeding
+			Spark.awaitInitialization();
 		}
 		catch(SparkRunnerException e) {
 			logger.error(e.getMessage(), e);
@@ -74,11 +88,8 @@ public final class SparkRunner {
 		return SparkComponentStore.put(resourceBundle);
 	}
 
-	/**
-	 * @return A set containing all components' class using the Application's package as the base package for scanning.
-	 */
-	private Set<Class<?>> scanApplicationComponents() {
-		Reflections reflections = new Reflections(
+	private Reflections getReflectionEngine() {
+		return new Reflections(
 			new ConfigurationBuilder()
 				.setScanners(
 					new SubTypesScanner(false),
@@ -90,15 +101,28 @@ public final class SparkRunner {
 				}))
 				.filterInputsBy(new FilterBuilder().include(FilterBuilder.prefix(applicationClass.getPackage().getName())))
 		);
+	}
 
-		return reflections.getTypesAnnotatedWith(SparkComponent.class);
+	private Set<Class<?>> scanApplicationComponents(Reflections reflections) {
+		Set<Class<?>> components = reflections.getTypesAnnotatedWith(SparkComponent.class);
+		Set<Class<?>> controllers = reflections.getTypesAnnotatedWith(SparkController.class);
+		components.addAll(controllers);
+
+		return components;
+	}
+
+	private Set<Class<?>> scanApplicationWebSockets(Reflections reflections) {
+		return reflections.getTypesAnnotatedWith(SparkWebSocket.class);
 	}
 
 	/**
 	 * For each SparkComponent class, a new instance is created and stored in order to be injected.
-	 * @param sparkComponents The set containing all components' class.
+	 * @param sparkComponents The set containing all component classes.
 	 */
 	private void storeComponents(Set<Class<?>> sparkComponents) {
+		if(sparkComponents == null || sparkComponents.isEmpty())
+			return;
+
 		for(Class<?> componentClass : sparkComponents) {
 			try {
 				Object component = createClassInstance(componentClass);
@@ -112,18 +136,50 @@ public final class SparkRunner {
 
 	/**
 	 * Once the application's components have been instantiated and stored, we can proceed with the injections.
-	 * For each components' class, we search its fields for an injection annotation and set its value with the
-	 * right component. If the component is a SparkController, then its methods will also be scanned in order to
-	 * inject its route into Spark Routes' lambda expressions.
-	 * @param sparkComponents The set containing all components' class.
+	 * For each component classes, we search its fields for an injection annotation and set its value with the
+	 * right component.
+	 * If the component is a SparkWebSocket, then its instance will be bound to the specified path.
+	 * @param sparkWebSockets The set containing all web socket classes.
 	 */
-	private void processInjections(Set<Class<?>> sparkComponents) {
+	private void processWebSocketsInjection(Set<Class<?>> sparkWebSockets) {
+		if(sparkWebSockets == null || sparkWebSockets.isEmpty())
+			return;
+
+		for(Class<?> webSocketClass : sparkWebSockets) {
+			Object webSocket = SparkComponentStore.get(webSocketClass);
+
+			injectFields(webSocket, webSocketClass);
+
+			SparkWebSocket sparkWebSocket;
+			if((sparkWebSocket = webSocketClass.getAnnotation(SparkWebSocket.class)) != null) {
+				Spark.webSocket(sparkWebSocket.path(), webSocket);
+			}
+		}
+
+		Spark.init();
+	}
+
+	/**
+	 * Once the application's components have been instantiated and stored, we can proceed with the injections.
+	 * For each component classes, we search its fields for an injection annotation and set its value with the
+	 * right component.
+	 * If the component is a SparkController, then its methods will also be scanned in order to
+	 * inject its routes into Spark Routes' lambda expressions.
+	 * @param sparkComponents The set containing all component classes.
+	 */
+	private void processComponentsInjection(Set<Class<?>> sparkComponents) {
+		if(sparkComponents == null || sparkComponents.isEmpty())
+			return;
+
 		for(Class<?> componentClass : sparkComponents) {
 			Object component = SparkComponentStore.get(componentClass);
 
 			injectFields(component, componentClass);
-			if(componentClass.isAnnotationPresent(SparkController.class))
-				injectRoutes(component, componentClass);
+
+			SparkController sparkController;
+			if((sparkController = componentClass.getAnnotation(SparkController.class)) != null) {
+				injectRoutes(component, sparkController, componentClass);
+			}
 		}
 	}
 
@@ -161,7 +217,7 @@ public final class SparkRunner {
 	 * @param component The stored instance of a given component.
 	 * @param componentClass The component's class used for methods reflection.
 	 */
-	private void injectRoutes(Object component, Class<?> componentClass) {
+	private void injectRoutes(Object component, SparkController sparkController, Class<?> componentClass) {
 		Method[] methods = componentClass.getDeclaredMethods();
 
 		for(Method method : methods) {
@@ -242,24 +298,10 @@ public final class SparkRunner {
 	}
 
 	/**
-	 * @return The application's ResourceBundle.
-	 */
-	public ResourceBundle getApplicationProperties() {
-		return applicationProperties;
-	}
-
-	/**
-	 * @return The set containing all components' class.
-	 */
-	public Set<Class<?>> getSparkComponents() {
-		return sparkComponents;
-	}
-
-	/**
 	 * @see SparkRunner#startApplication(Class, Logger)
 	 */
-	public static SparkRunner startApplication(Class<?> applicationClass) {
-		return SparkRunner.startApplication(applicationClass, null);
+	public static void startApplication(Class<?> applicationClass) {
+		SparkRunner.startApplication(applicationClass, null);
 	}
 
 	/**
@@ -267,13 +309,12 @@ public final class SparkRunner {
 	 *                         and runtime annotations instantiations.
 	 * @param logger An optional logger to be used by the SparkRunner instance.
 	 *               If none is provided, a default one will be used.
-	 * @return A new SparkRunner instance that can be used to access reflected classes and various application metadata.
 	 */
-	public static SparkRunner startApplication(Class<?> applicationClass, Logger logger) {
+	public static void startApplication(Class<?> applicationClass, Logger logger) {
 		if(!applicationClass.isAnnotationPresent(SparkApplication.class))
 			throw new IllegalStateException("Application class must be annotated using @SparkApplication.");
 
 		logger = (logger == null) ? LoggerFactory.getLogger(SparkRunner.class) : logger;
-		return new SparkRunner(applicationClass, logger);
+		new SparkRunner(applicationClass, logger).run();
 	}
 }

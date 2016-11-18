@@ -10,7 +10,6 @@ final class SparkConfiguration implements Runnable {
 
 	// WebServer
 	private static final String PROPERTY_PORT = "spark.port";
-	private static final String PROPERTY_AWAIT = "spark.await";
 
 	// Threads
 	private static final String PROPERTY_THREADS_MAX = "spark.threads.max";
@@ -39,7 +38,6 @@ final class SparkConfiguration implements Runnable {
 	@Override
 	public void run() {
 		this.port()
-			.await()
 			.threads()
 			.ssl()
 			.routeOverview()
@@ -49,16 +47,6 @@ final class SparkConfiguration implements Runnable {
 	private SparkConfiguration port() {
 		try {
 			Spark.port(Integer.parseInt(bundle.getString(PROPERTY_PORT)));
-		}
-		catch(MissingResourceException e) { /* Do nothing */ }
-
-		return this;
-	}
-
-	private SparkConfiguration await() {
-		try {
-			if(Boolean.parseBoolean(bundle.getString(PROPERTY_AWAIT)))
-				Spark.awaitInitialization();
 		}
 		catch(MissingResourceException e) { /* Do nothing */ }
 
