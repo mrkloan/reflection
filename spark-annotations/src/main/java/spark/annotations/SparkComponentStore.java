@@ -3,16 +3,17 @@ package spark.annotations;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class SparkComponentStore {
+final class SparkComponentStore {
 
 	private static final Map<Class<?>, Object> sparkComponents = new HashMap<>();
 
-	public static void put(Object o) {
-		sparkComponents.put(o.getClass(), o);
+	static <T> T put(T component) {
+		sparkComponents.put(component.getClass(), component);
+		return component;
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> T get(Class<T> componentClass) {
+	static <T> T get(Class<T> componentClass) {
 		return (T) sparkComponents.get(componentClass);
 	}
 }

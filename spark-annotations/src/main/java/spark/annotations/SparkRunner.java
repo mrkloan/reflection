@@ -7,11 +7,11 @@ import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
-import spark.ResponseTransformer;
 import spark.Route;
 import spark.Spark;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -20,19 +20,32 @@ public final class SparkRunner {
 
 	private final Class applicationClass;
 
-	public SparkRunner(Class applicationClass) {
+	private SparkRunner(Class applicationClass) {
 		this.applicationClass = applicationClass;
 
-		initResourceBundle();
-		initComponents();
+		try {
+			initApplication();
+			initResourceBundle();
+			initComponents();
+		}
+		catch(SparkRunnerException e) {
+			e.printStackTrace();
+		}
 	}
 
-	private void initResourceBundle() {
+	private Object initApplication() throws SparkRunnerException {
+		Object app = createClassInstance(applicationClass);
+		return SparkComponentStore.put(app);
+	}
+
+	private ResourceBundle initResourceBundle() throws SparkRunnerException {
 		SparkApplication sparkApplication = (SparkApplication) applicationClass.getAnnotation(SparkApplication.class);
 		ResourceBundle resourceBundle = ResourceBundle.getBundle(sparkApplication.resourceBundle());
 
-		if(resourceBundle != null)
-			SparkComponentStore.put(resourceBundle);
+		if(resourceBundle == null)
+			throw new SparkRunnerException("Application ResourceBundle cannot be null.");
+
+		return SparkComponentStore.put(resourceBundle);
 	}
 
 	private void initComponents() {
@@ -57,12 +70,13 @@ public final class SparkRunner {
 	private void storeComponents(Set<Class<?>> sparkComponents) {
 		for(Class<?> componentClass : sparkComponents) {
 			try {
-				Object component = componentClass.newInstance();
+				Object component = createClassInstance(componentClass);
 				SparkComponentStore.put(component);
 
 				System.out.println("Stored component: " + component);
 			}
-			catch(InstantiationException | IllegalAccessException e) {
+			catch(SparkRunnerException e) {
+				// TODO
 				e.printStackTrace();
 			}
 		}
@@ -96,6 +110,7 @@ public final class SparkRunner {
 				System.out.println(component + "." + field.getName() + " = " + value);
 			}
 			catch(IllegalAccessException e) {
+				// TODO
 				e.printStackTrace();
 			}
 			finally {
@@ -104,11 +119,6 @@ public final class SparkRunner {
 		}
 	}
 
-	/**
-	 * TODO: ResponseTransformers ? @SparkBefore, @SparkAfter.
-	 * @param component
-	 * @param componentClass
-	 */
 	private void injectRoutes(Object component, Class<?> componentClass) {
 		Method[] methods = componentClass.getDeclaredMethods();
 
@@ -155,18 +165,28 @@ public final class SparkRunner {
 
 	private Route createSparkRoute(Object component, SparkRoute sparkRoute, Method method) {
 		return (req, res) -> {
-			try {
-				if(!sparkRoute.accept().isEmpty())
-					res.header("Accept", sparkRoute.accept());
-				res.type(sparkRoute.contentType());
+			if(!sparkRoute.accept().isEmpty())
+				res.header("Accept", sparkRoute.accept());
+			res.type(sparkRoute.contentType());
 
-				return method.invoke(component, req, res);
-			}
-			catch(Exception e) {
-				e.printStackTrace();
-				return null;
-			}
+			return method.invoke(component, req, res);
 		};
+	}
+
+	private Object createClassInstance(Class<?> c) throws SparkRunnerException {
+		// Try to instantiate using default Object constructor.
+		try {
+			return c.newInstance();
+		}
+		catch(InstantiationException | IllegalAccessException e) { /* Do nothing */ }
+
+		// Try to instantiate using an empty class constructor.
+		try {
+			return c.getConstructor().newInstance();
+		}
+		catch(InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+			throw new SparkRunnerException(e.getMessage(), e);
+		}
 	}
 
 	public static SparkRunner startApplication(Class<?> applicationClass) {
