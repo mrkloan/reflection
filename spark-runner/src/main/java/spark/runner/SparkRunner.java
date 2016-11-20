@@ -7,8 +7,7 @@ import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import spark.Filter;
 import spark.ResponseTransformer;
 import spark.Route;
 import spark.Spark;
@@ -17,53 +16,45 @@ import spark.runner.annotations.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-public final class SparkRunner implements Runnable {
+public final class SparkRunner {
 
-	private final Logger logger;
 	private final Class applicationClass;
 
 	/**
 	 * Create a new SparkRunner object which will take care of all the application initialisation and configuration.
 	 * @param applicationClass The base class of this Spark application.
 	 */
-	private SparkRunner(Class applicationClass, Logger logger) {
-		this.logger = logger;
+	private SparkRunner(Class applicationClass) throws SparkRunnerException {
 		this.applicationClass = applicationClass;
-	}
 
-	@Override
-	public void run() {
-		try {
-			initApplication();
+		initApplication();
 
-			// Configure the application
-			ResourceBundle applicationProperties = initResourceBundle();
-			new SparkConfiguration(applicationProperties).run();
+		// Configure the application
+		ResourceBundle applicationProperties = initResourceBundle();
+		new SparkConfiguration(applicationProperties).run();
 
-			// Gather all the application classes using reflection
-			Reflections reflections = getReflectionEngine();
+		// Gather all the application classes using reflection
+		Reflections reflections = getReflectionEngine();
 
-			Set<Class<?>> components = scanApplicationComponents(reflections);
-			storeComponents(components);
+		Set<Class<?>> components = scanApplicationComponents(reflections);
+		storeComponents(components);
 
-			Set<Class<?>> webSockets = scanApplicationWebSockets(reflections);
-			storeComponents(webSockets);
+		Set<Class<?>> webSockets = scanApplicationWebSockets(reflections);
+		storeComponents(webSockets);
 
-			// WebSockets need to be initialized first
-			processWebSocketsInjection(webSockets);
+		// WebSockets need to be initialized first
+		processWebSocketsInjection(webSockets);
 
-			// Then we can register other components
-			processComponentsInjection(components);
+		// Then we can register other components
+		processComponentsInjection(components);
 
-			// Wait for the server initialization before proceeding
-			Spark.awaitInitialization();
-		}
-		catch(SparkRunnerException e) {
-			logger.error(e.getMessage(), e);
-		}
+		// Wait for the server initialization before proceeding
+		Spark.awaitInitialization();
 	}
 
 	/**
@@ -131,18 +122,13 @@ public final class SparkRunner implements Runnable {
 	 * For each SparkComponent class, a new instance is created and stored in order to be injected.
 	 * @param sparkComponents The set containing all component classes.
 	 */
-	private void storeComponents(Set<Class<?>> sparkComponents) {
+	private void storeComponents(Set<Class<?>> sparkComponents) throws SparkRunnerException {
 		if(sparkComponents == null || sparkComponents.isEmpty())
 			return;
 
 		for(Class<?> componentClass : sparkComponents) {
-			try {
-				Object component = createClassInstance(componentClass);
-				SparkComponentStore.put(component);
-			}
-			catch(SparkRunnerException e) {
-				logger.error(e.getMessage(), e);
-			}
+			Object component = createClassInstance(componentClass);
+			SparkComponentStore.put(component);
 		}
 	}
 
@@ -153,7 +139,7 @@ public final class SparkRunner implements Runnable {
 	 * If the component is a SparkWebSocket, then its instance will be bound to the specified path.
 	 * @param sparkWebSockets The set containing all web socket classes.
 	 */
-	private void processWebSocketsInjection(Set<Class<?>> sparkWebSockets) {
+	private void processWebSocketsInjection(Set<Class<?>> sparkWebSockets) throws SparkRunnerException {
 		if(sparkWebSockets == null || sparkWebSockets.isEmpty())
 			return;
 
@@ -179,7 +165,7 @@ public final class SparkRunner implements Runnable {
 	 * inject its routes into Spark Routes' lambda expressions.
 	 * @param sparkComponents The set containing all component classes.
 	 */
-	private void processComponentsInjection(Set<Class<?>> sparkComponents) {
+	private void processComponentsInjection(Set<Class<?>> sparkComponents) throws SparkRunnerException {
 		if(sparkComponents == null || sparkComponents.isEmpty())
 			return;
 
@@ -190,6 +176,7 @@ public final class SparkRunner implements Runnable {
 
 			SparkController sparkController;
 			if((sparkController = componentClass.getAnnotation(SparkController.class)) != null) {
+				injectFilters(component, sparkController, componentClass);
 				injectRoutes(component, sparkController, componentClass);
 			}
 		}
@@ -200,7 +187,7 @@ public final class SparkRunner implements Runnable {
 	 * @param component The stored instance of a given component.
 	 * @param componentClass The component's class used for fields reflection.
 	 */
-	private void injectFields(Object component, Class<?> componentClass) {
+	private void injectFields(Object component, Class<?> componentClass) throws SparkRunnerException {
 		Field[] fields = componentClass.getDeclaredFields();
 
 		for(Field field : fields) {
@@ -216,7 +203,7 @@ public final class SparkRunner implements Runnable {
 				field.set(component, value);
 			}
 			catch(IllegalAccessException e) {
-				logger.error(e.getMessage(), e);
+				throw new SparkRunnerException("Unable to inject value in field " + field.getName() + " of component " + componentClass.getName(), e);
 			}
 			finally {
 				field.setAccessible(accessible);
@@ -225,25 +212,58 @@ public final class SparkRunner implements Runnable {
 	}
 
 	/**
-	 * Scan the component's methods in order to inject its route into Spark Routes' lambda expressions.
+	 * Scan the component's methods in order to inject its filters into the Spark engine.
 	 * @param component The stored instance of a given component.
 	 * @param componentClass The component's class used for methods reflection.
 	 */
-	private void injectRoutes(Object component, SparkController sparkController, Class<?> componentClass) {
+	private void injectFilters(Object component, SparkController sparkController, Class<?> componentClass) throws SparkRunnerException {
 		Method[] methods = componentClass.getDeclaredMethods();
 
-		String controllerPath = sparkController.path();
-		if(controllerPath.endsWith("/"))
-			controllerPath = controllerPath.substring(0, controllerPath.length() - 1);
+		try {
+			String controllerPath = formatPath(sparkController.path());
 
-		for(Method method : methods) {
-			SparkRoute sparkRoute;
+			for (Method method : methods) {
+				SparkFilter sparkFilter;
 
-			if((sparkRoute = method.getAnnotation(SparkRoute.class)) == null)
-				continue;
+				if((sparkFilter = method.getAnnotation(SparkFilter.class)) == null)
+					continue;
 
-			try {
-				String routePath = controllerPath + sparkRoute.path();
+				String filterPath = controllerPath + formatPath(sparkFilter.path());
+				method.setAccessible(true);
+
+				switch(sparkFilter.filter()) {
+					case BEFORE:
+						Spark.before(filterPath, (req, res) -> method.invoke(component, req, res));
+						break;
+					case AFTER:
+						Spark.after(filterPath, (req, res) -> method.invoke(component, req, res));
+						break;
+				}
+			}
+		}
+		catch(URISyntaxException e) {
+			throw new SparkRunnerException("Spark component path is invalid.", e);
+		}
+	}
+
+	/**
+	 * Scan the component's methods in order to inject its routes into Spark Routes' lambda expressions.
+	 * @param component The stored instance of a given component.
+	 * @param componentClass The component's class used for methods reflection.
+	 */
+	private void injectRoutes(Object component, SparkController sparkController, Class<?> componentClass) throws SparkRunnerException {
+		Method[] methods = componentClass.getDeclaredMethods();
+
+		try {
+			String controllerPath = formatPath(sparkController.path());
+
+			for(Method method : methods) {
+				SparkRoute sparkRoute;
+
+				if((sparkRoute = method.getAnnotation(SparkRoute.class)) == null)
+					continue;
+
+				String routePath = controllerPath + formatPath(sparkRoute.path());
 				Route routeLambda = createSparkRoute(component, sparkRoute, method);
 				ResponseTransformer routeTransformer = (ResponseTransformer)createClassInstance(sparkRoute.transformer());
 
@@ -278,9 +298,9 @@ public final class SparkRunner implements Runnable {
 						Spark.get(routePath, routeLambda, routeTransformer);
 				}
 			}
-			catch(SparkRunnerException e) {
-				logger.error(e.getMessage(), e);
-			}
+		}
+		catch(URISyntaxException e) {
+			throw new SparkRunnerException("Spark component path is invalid.", e);
 		}
 	}
 
@@ -321,24 +341,23 @@ public final class SparkRunner implements Runnable {
 		}
 	}
 
-	/**
-	 * @see SparkRunner#startApplication(Class, Logger)
-	 */
-	public static void startApplication(Class<?> applicationClass) {
-		SparkRunner.startApplication(applicationClass, null);
+	private String formatPath(String path) throws URISyntaxException {
+		URI uri = new URI(path);
+
+		String wellFormedUri = uri.toString().replaceAll("/{2,}", "/");
+		if(wellFormedUri.endsWith("/"))
+			wellFormedUri = wellFormedUri.substring(0, wellFormedUri.length() - 1);
+
+		return wellFormedUri;
 	}
 
 	/**
 	 * @param applicationClass The application class, used as an entry point for package scanning
 	 *                         and runtime annotations instantiations.
-	 * @param logger An optional logger to be used by the SparkRunner instance.
-	 *               If none is provided, a default one will be used.
 	 */
-	public static void startApplication(Class<?> applicationClass, Logger logger) {
+	public static void startApplication(Class<?> applicationClass) throws SparkRunnerException {
 		if(!applicationClass.isAnnotationPresent(SparkApplication.class))
 			throw new IllegalStateException("Application class must be annotated using @SparkApplication.");
-
-		logger = (logger == null) ? LoggerFactory.getLogger(SparkRunner.class) : logger;
-		new SparkRunner(applicationClass, logger).run();
+		new SparkRunner(applicationClass);
 	}
 }

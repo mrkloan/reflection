@@ -1,6 +1,6 @@
 package spark.runner;
 
-class SparkRunnerException extends Exception {
+public class SparkRunnerException extends Exception {
 
 	SparkRunnerException(String msg) {
 		super(msg);

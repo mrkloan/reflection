@@ -14,6 +14,6 @@ final class SparkComponentStore {
 
 	@SuppressWarnings("unchecked")
 	static <T> T get(Class<T> componentClass) {
-		return (T) sparkComponents.get(componentClass);
+		return (T)sparkComponents.get(componentClass);
 	}
 }
