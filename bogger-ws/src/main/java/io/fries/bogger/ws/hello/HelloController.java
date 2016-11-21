@@ -13,45 +13,27 @@ import spark.runner.annotations.SparkRoute;
 public class HelloController {
 
 	@SparkInject
-	private ApiParser apiParser;
+	private ApiParser parser;
 
 	@SparkInject
 	private HelloService helloService;
 
 	@SparkRoute(path = "")
 	private ApiResponse getHelloMessage(Request req, Response res) {
-		try {
-			return new ApiResponse.Builder(req, res).data(helloService.hello()).build();
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-			return new ApiResponse.Builder(req, res).data(e.getMessage()).build();
-		}
+		return new ApiResponse.Builder(req, res).data(helloService.hello()).build();
 	}
 
 	@SparkRoute(path = "/:name")
 	private ApiResponse getCustomMessage(Request req, Response res) {
-		try {
-			return new ApiResponse.Builder(req, res).data(helloService.hello(req.params("name"))).build();
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-			return new ApiResponse.Builder(req, res).data(e.getMessage()).build();
-		}
+		return new ApiResponse.Builder(req, res).data(helloService.hello(req.params("name"))).build();
 	}
 
 	@SparkFilter(filter = SparkFilter.Filter.AFTER, path = "/*")
 	private void afterCustomHello(Request req, Response res) {
-		try {
-			ApiResponse initialResponse = apiParser.object(res.body(), ApiResponse.class);
-			String data = initialResponse.getData() + " It was nice meeting you. :)";
-			ApiResponse newResponse = new ApiResponse.Builder(req, res).data(data).build();
+		ApiResponse initialResponse = parser.object(res.body(), ApiResponse.class);
+		String data = initialResponse.getData() + " It was nice meeting you. :)";
+		ApiResponse newResponse = new ApiResponse.Builder(req, res).data(data).build();
 
-			res.body(apiParser.json(newResponse));
-		}
-		catch(Exception e) {
-			ApiResponse errorResponse = new ApiResponse.Builder(req, res).data(e.getMessage()).build();
-			res.body(apiParser.json(errorResponse));
-		}
+		res.body(parser.json(newResponse));
 	}
 }

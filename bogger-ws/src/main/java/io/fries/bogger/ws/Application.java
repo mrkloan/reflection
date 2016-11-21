@@ -2,9 +2,12 @@ package io.fries.bogger.ws;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Request;
+import spark.Response;
 import spark.runner.SparkRunner;
 import spark.runner.SparkRunnerException;
 import spark.runner.annotations.SparkApplication;
+import spark.runner.annotations.SparkFilter;
 
 @SparkApplication
 public class Application {

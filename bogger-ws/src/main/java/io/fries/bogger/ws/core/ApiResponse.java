@@ -10,6 +10,8 @@ import java.util.Map;
 
 public class ApiResponse implements Serializable {
 
+	private static final String APPLICATION_JSON = "application/json";
+
 	private final Object data;
 	private final Map<String, String> links;
 	private final long timestamp;
@@ -45,6 +47,7 @@ public class ApiResponse implements Serializable {
 			this.res = res;
 
 			this.links = new HashMap<>();
+			this.type(APPLICATION_JSON);
 		}
 
 		public Builder status(int status) {
@@ -54,9 +57,17 @@ public class ApiResponse implements Serializable {
 
 		public Builder header(String header, String value) {
 			if(header == null || header.isEmpty() || value == null || value.isEmpty())
-				throw new IllegalArgumentException("Header name or value cannot be null or empty.");
+				throw new IllegalArgumentException("Header name or value cannot be null nor empty.");
 
 			this.res.header(header, value);
+			return this;
+		}
+
+		public Builder type(String contentType) {
+			if(contentType == null || contentType.isEmpty())
+				throw new IllegalArgumentException("ContentType cannot be null nor empty.");
+
+			this.res.type(contentType);
 			return this;
 		}
 

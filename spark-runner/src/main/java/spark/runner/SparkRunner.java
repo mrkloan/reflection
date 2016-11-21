@@ -7,7 +7,6 @@ import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
-import spark.Filter;
 import spark.ResponseTransformer;
 import spark.Route;
 import spark.Spark;
@@ -32,7 +31,7 @@ public final class SparkRunner {
 	private SparkRunner(Class applicationClass) throws SparkRunnerException {
 		this.applicationClass = applicationClass;
 
-		initApplication();
+		Object application = initApplication();
 
 		// Configure the application
 		ResourceBundle applicationProperties = initResourceBundle();
@@ -46,6 +45,10 @@ public final class SparkRunner {
 
 		Set<Class<?>> webSockets = scanApplicationWebSockets(reflections);
 		storeComponents(webSockets);
+
+		// Process injections in the main Application class
+		injectFields(application, applicationClass);
+		injectExceptions(application, applicationClass);
 
 		// WebSockets need to be initialized first
 		processWebSocketsInjection(webSockets);
@@ -173,6 +176,7 @@ public final class SparkRunner {
 			Object component = SparkComponentStore.get(componentClass);
 
 			injectFields(component, componentClass);
+			injectExceptions(component, componentClass);
 
 			SparkController sparkController;
 			if((sparkController = componentClass.getAnnotation(SparkController.class)) != null) {
@@ -212,6 +216,32 @@ public final class SparkRunner {
 	}
 
 	/**
+	 * Scan the component's methods in order to inject its exception handlers into the Spark engine.
+	 * @param component The stored instance of a given component.
+	 * @param componentClass The component's class used for methods reflection.
+	 */
+	private void injectExceptions(Object component, Class<?> componentClass) {
+		Method[] methods = componentClass.getDeclaredMethods();
+
+		for(Method method : methods) {
+			SparkException sparkException;
+
+			if ((sparkException = method.getAnnotation(SparkException.class)) == null)
+				continue;
+
+			method.setAccessible(true);
+			Spark.exception(sparkException.value(), (ex, req, res) -> {
+				try {
+					method.invoke(component, ex, req, res);
+				}
+				catch (IllegalAccessException | InvocationTargetException e) {
+					throw new RuntimeException(e.getMessage(), e);
+				}
+			});
+		}
+	}
+
+	/**
 	 * Scan the component's methods in order to inject its filters into the Spark engine.
 	 * @param component The stored instance of a given component.
 	 * @param componentClass The component's class used for methods reflection.
@@ -229,6 +259,9 @@ public final class SparkRunner {
 					continue;
 
 				String filterPath = controllerPath + formatPath(sparkFilter.path());
+				if(filterPath.isEmpty())
+					filterPath = "*";
+
 				method.setAccessible(true);
 
 				switch(sparkFilter.filter()) {
