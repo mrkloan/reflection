@@ -1,4 +1,5 @@
 rootProject.name = 'bogger'
 
+include 'reflection'
 include 'spark-runner'
 include 'bogger-ws'
