@@ -13,69 +13,31 @@ We'll see how it turns out in the end!
 
 ## Artifacts
 
-The `bogger` project is composed of various artifacts interacting with each other. Or not.
-Doing things, all that kind of stuff.
-
+The `bogger` project is composed of various - and sometime unrelated - artifacts.
 I try to keep them focused on a single task in order to make them as reusable as possible.
 
-### spark-runner
+Here are the direct links to the sub-projects `README.md` files:
 
-#### A little bit of history
-To be honest, I discovered **Spring Boot** not so long ago and I loved the simplicity of it.
-The project setup was done in a matter of seconds, and I was already addicted to the *annotation driven* development
-style induced by JEE.
+ - [reflection](reflection/README.md): a personal implementation of Google's [Guava ClassPath](https://github.com/google/guava/blob/master/guava/src/com/google/common/reflect/ClassPath.java)
+ - [spark-runner](spark-runner/README.md): an *annotation driven* library for [Spark Java](http://sparkjava.com/)
+ - [bogger-ws](bogger-ws/README.md): currently a playground
 
-But hell, a simple (yet polite) REST API greeting me with a kind `"Hello, World!"` on each of its endpoints
-weighted like **A FREAKING MONSTER**.
+## Repository
 
-So I dove deep into the Java micro-framework world, and the second (if not first) link I found was one leading to the
-[Spark Java](http://sparkjava.com/) website.
+Some of the artifacts may be totally functional outside of the `bogger` project context.
 
-Needless to say that I immediately felt I love with its simple and efficient implementation.
-And the size of the generated artifact was under 3MB! We're still talking Java here, right?
-
-But I still felt something was wrong. Like something was missing. I read a lot of blog posts and tutorials about
-"*How to avoid boilerplate code with Spark Java*", but was never satisfied.
-
-Slowly sinking into distress, I finally realised that if a specific mechanism was not available I just had to create it.
-And so did I.
-
-#### API
-
-`spark-runner` is an *annotation driven* API allowing you to delegate much of the already minimal Spark configuration
-and verbosity.
-
-I tried to stay *agnostic* here about the design, hence **you won't find any reference** to some *Service* or *Repository*
-because, hey, do whatever you want with your code.
-
-##### Usage
-
-*TODO*
-
-##### Configuration
-
-*TODO*
-
-#### Dependency
-The `spark-runner` artifact in itself can be used as a dependency for your own projects in a simple way:
+If you wish to give them a try, feel free to add the following repository to your project
+and refer to the **Installation** section of the sub-project's `README.md`:
 
 Maven:
 ```xml
-<repositories>
+<repository>
     <repository>
         <id>fries-io</id>
         <name>fries.io Maven Repository</name>
         <url>http://maven.fries.io/</url>
     </repository>
-</repositories>
-
-<dependencies>
-    <dependency>
-        <groupId>io.fries</groupId>
-        <artifactId>spark-runner</artifactId>
-        <version>0.1-SNAPSHOT</version>
-    </dependency>
-</dependencies>
+</repository>
 ```
 
 Gradle:
@@ -85,15 +47,7 @@ repositories {
         url 'http://maven.fries.io/'
     }
 }
-
-dependencies {
-    compile 'io.fries:spark-runner:0.1-SNAPSHOT'
-}
 ```
-
-### bogger-ws
-
-In its current state, the `bogger-ws` artifact is only a playground to test the `spark-runner` API.
 
 ## Contributors
 

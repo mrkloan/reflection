@@ -1,4 +1,4 @@
-This project is my **personal implementation** of Google's [Guava ClassPath](https://github.com/google/guava/blob/master/guava/src/com/google/common/reflect/ClassPath.java).
+This project is a **personal implementation** of Google's [Guava ClassPath](https://github.com/google/guava/blob/master/guava/src/com/google/common/reflect/ClassPath.java).
 
 Please note that the Guava source code is licensed under the APLv2, whose notice states the following:
 
