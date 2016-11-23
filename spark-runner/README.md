@@ -45,7 +45,7 @@ Maven:
     <dependency>
         <groupId>io.fries</groupId>
         <artifactId>spark-runner</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>1.0-RC1</version>
     </dependency>
 </dependencies>
 ```
@@ -53,6 +53,6 @@ Maven:
 Gradle:
 ```groovy
 dependencies {
-    compile 'io.fries:spark-runner:0.1-SNAPSHOT'
+    compile 'io.fries:spark-runner:1.0-RC1'
 }
 ```

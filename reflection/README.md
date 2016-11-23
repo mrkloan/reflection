@@ -105,7 +105,7 @@ Maven:
 Gradle:
 ```groovy
 dependencies {
-    compile 'io.fries:reflection:1.0-RC1'
+    compile 'io.fries:reflection:1.0-RC2'
 }
 ```
 
