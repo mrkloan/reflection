@@ -7,9 +7,6 @@
 Reflection.scan().getResources().forEach(System.out::println);
 ```
 
-It is important to note that *no reference to classpath resources are created during the reflection process*,
-which leads to a lightweight solution.
-
 ## Usage 
 
 A single entry point is exposed to use the `reflection` library: the `Reflection` class,
@@ -75,6 +72,11 @@ The `reflection` default scanners are located in the `io.fries.reflection.scanne
  
  - `DefaultScanner` store all the classpath resources
  - `AnnotationScanner` store all the classes annotated with the provided annotations
+
+Please note that the *weight* of the reflection process highly depends on the `Scanner` implementation you use.
+
+While the `DefaultScanner` will accept any resource without loading them, it is mandatory for the `AnnotationScanner`
+to load the classes in the `ClassLoader` in order to inspect their annotations.
 
 ## Installation
 

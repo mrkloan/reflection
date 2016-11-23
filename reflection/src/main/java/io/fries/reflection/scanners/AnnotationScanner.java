@@ -24,6 +24,7 @@ public class AnnotationScanner extends Scanner {
 	/**
 	 * Instantiate a new {@link DefaultScanner} object by calling the {@link Scanner} constructor.
 	 * @param classLoader The base {@link ClassLoader} for which the {@link DefaultScanner} has been called.
+	 * @param annotations A variable list of Annotation classes which are required for the resource to be accepted.
 	 */
 	@SafeVarargs
 	public AnnotationScanner(ClassLoader classLoader, Class<? extends Annotation> ...annotations) {
@@ -39,7 +40,7 @@ public class AnnotationScanner extends Scanner {
 	/**
 	 * @param classLoader The {@link ClassLoader} object the resource is attached to.
 	 * @param resourceName The complete name the resource.
-	 * @return Return {@code true} if the
+	 * @return Return {@code true} if the resource is a class and is annotated with all the scanner {@link #annotations}.
 	 */
 	@Override
 	protected boolean acceptResource(ClassLoader classLoader, String resourceName) {
