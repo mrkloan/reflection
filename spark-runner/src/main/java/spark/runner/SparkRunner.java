@@ -1,8 +1,8 @@
 package spark.runner;
 
 import io.fries.reflection.Reflection;
-import io.fries.reflection.scanners.AnnotationScanner;
-import io.fries.reflection.scanners.Scanner;
+import io.fries.reflection.filters.AnnotationFilter;
+import io.fries.reflection.filters.PackageFilter;
 import spark.ResponseTransformer;
 import spark.Route;
 import spark.Spark;
@@ -37,21 +37,24 @@ public final class SparkRunner {
 		Reflection reflection = getReflectionEngine();
 
 		Set<Class<?>> components = scanApplicationComponents(reflection);
-		storeComponents(components);
-
 		Set<Class<?>> webSockets = scanApplicationWebSockets(reflection);
+		
+		if(components.isEmpty() && webSockets.isEmpty())
+			throw new IllegalStateException("No Spark component could be found.");
+		
+		storeComponents(components);
 		storeComponents(webSockets);
-
+		
 		// Process injections in the main Application class
 		injectFields(application, applicationClass);
 		injectExceptions(application, applicationClass);
-
+		
 		// WebSockets need to be initialized first
 		processWebSocketsInjection(webSockets);
-
+		
 		// Then we can register other components
 		processComponentsInjection(components);
-
+		
 		// Wait for the server initialization before proceeding
 		Spark.awaitInitialization();
 	}
@@ -83,9 +86,12 @@ public final class SparkRunner {
 	 * @return The configured reflection engine used to gather classes using their annotations.
 	 */
 	private Reflection getReflectionEngine() {
-		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		Scanner scanner = new AnnotationScanner(classLoader, SparkComponent.class, SparkController.class, SparkWebSocket.class);
-		return Reflection.scan(scanner);
+		return Reflection.of(Thread.currentThread().getContextClassLoader())
+						 .filter(new PackageFilter(applicationClass.getPackage().getName()).allowSubpackages())
+						 .filter(new AnnotationFilter(
+							 SparkComponent.class, SparkController.class, SparkWebSocket.class
+						 ))
+						 .scan();
 	}
 
 	/**
@@ -93,8 +99,8 @@ public final class SparkRunner {
 	 * @return A set of classes annotated using either the {@code SparkComponent} or {@code SparkController} annotations.
 	 */
 	private Set<Class<?>> scanApplicationComponents(Reflection reflection) {
-		Set<Class<?>> components = reflection.getAnnotatedTypesRecursively(SparkComponent.class, applicationClass.getPackage().getName());
-		Set<Class<?>> controllers = reflection.getAnnotatedTypesRecursively(SparkController.class, applicationClass.getPackage().getName());
+		Set<Class<?>> components = reflection.getAnnotatedTypes(SparkComponent.class);
+		Set<Class<?>> controllers = reflection.getAnnotatedTypes(SparkController.class);
 		components.addAll(controllers);
 
 		return components;
@@ -105,7 +111,7 @@ public final class SparkRunner {
 	 * @return A set of classes annotated using the {@code SparkWebSocket} annotation.
 	 */
 	private Set<Class<?>> scanApplicationWebSockets(Reflection reflection) {
-		return reflection.getAnnotatedTypesRecursively(SparkWebSocket.class, applicationClass.getPackage().getName());
+		return reflection.getAnnotatedTypes(SparkWebSocket.class);
 	}
 
 	/**

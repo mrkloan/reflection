@@ -1,6 +1,5 @@
 /**
- * Contains all the different {@link io.fries.reflection.scanners.Scanner} subclasses,
- * each of them following a specific reflection logic.
+ * Contains the {@link io.fries.reflection.scanners.ClassPathScanner}, where lies all the reflection logic.
  *
  * @version 1.0
  * @since 1.0

@@ -40,66 +40,66 @@ public class ReflectionTest {
 	@Test
 	public void getResources() {
 		assertThat(reflection.getResources())
-				.extracting(ResourceMetadata::getResource)
-				.containsExactlyInAnyOrder(
-					resources.stream()
-							 .map(ResourceMetadata::getResource)
-							 .toArray(size -> new String[resources.size()])
-				);
+			.extracting(ResourceMetadata::getResource)
+			.containsExactlyInAnyOrder(
+				resources.stream()
+					 .map(ResourceMetadata::getResource)
+					 .toArray(size -> new String[resources.size()])
+			);
 	}
 	
 	@Test
 	public void getSimpleResources() {
 		assertThat(reflection.getSimpleResources())
-				.allMatch(res -> !(res instanceof ClassMetadata))
-				.extracting(ResourceMetadata::getResource)
-				.containsExactlyInAnyOrder(
-					"some-resource.properties",
-					"META-INF/superfile.xml"
-				);
+			.allMatch(res -> !(res instanceof ClassMetadata))
+			.extracting(ResourceMetadata::getResource)
+			.containsExactlyInAnyOrder(
+				"some-resource.properties",
+				"META-INF/superfile.xml"
+			);
 	}
 	
 	@Test
 	public void getClasses() {
 		assertThat(reflection.getClasses())
-				.extracting(ClassMetadata::getResource)
-				.containsExactlyInAnyOrder(
-					"com/test/Example.class",
-					"com/test/ExampleUtils.class",
-					"com/test/handlers/DefaultHandler.class",
-					"com/test/handlers/meta/DefaultMetaHandler.class",
-					"com/test/handlers/meta/DefaultMetaHandler$Builder.class"
-				);
+			.extracting(ClassMetadata::getResource)
+			.containsExactlyInAnyOrder(
+				"com/test/Example.class",
+				"com/test/ExampleUtils.class",
+				"com/test/handlers/DefaultHandler.class",
+				"com/test/handlers/meta/DefaultMetaHandler.class",
+				"com/test/handlers/meta/DefaultMetaHandler$Builder.class"
+			);
 	}
 	
 	@Test
 	public void getTopLevelClasses() {
 		assertThat(reflection.getTopLevelClasses())
-				.extracting(ClassMetadata::getResource)
-				.containsExactlyInAnyOrder(
-					"com/test/Example.class",
-					"com/test/ExampleUtils.class",
-					"com/test/handlers/DefaultHandler.class",
-					"com/test/handlers/meta/DefaultMetaHandler.class"
-				);
+			.extracting(ClassMetadata::getResource)
+			.containsExactlyInAnyOrder(
+				"com/test/Example.class",
+				"com/test/ExampleUtils.class",
+				"com/test/handlers/DefaultHandler.class",
+				"com/test/handlers/meta/DefaultMetaHandler.class"
+			);
 	}
 	
 	@Test
 	public void getTopLevelClassesWithPackage() {
 		assertThat(reflection.getTopLevelClasses("com.test.handlers"))
-				.extracting(ClassMetadata::getResource)
-				.containsExactlyInAnyOrder(
-					"com/test/handlers/DefaultHandler.class"
-				);
+			.extracting(ClassMetadata::getResource)
+			.containsExactlyInAnyOrder(
+				"com/test/handlers/DefaultHandler.class"
+			);
 	}
 	
 	@Test
 	public void getTopLevelClassesRecursively() {
 		assertThat(reflection.getTopLevelClassesRecursively("com.test.handlers"))
-				.extracting(ClassMetadata::getResource)
-				.containsExactlyInAnyOrder(
-					"com/test/handlers/DefaultHandler.class",
-					"com/test/handlers/meta/DefaultMetaHandler.class"
-				);
+			.extracting(ClassMetadata::getResource)
+			.containsExactlyInAnyOrder(
+				"com/test/handlers/DefaultHandler.class",
+				"com/test/handlers/meta/DefaultMetaHandler.class"
+			);
 	}
 }

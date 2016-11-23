@@ -1,5 +1,6 @@
 package io.fries.reflection.scanners;
 
+import io.fries.reflection.filters.Filter;
 import io.fries.reflection.metadata.ResourceMetadata;
 
 import java.io.File;
@@ -14,36 +15,32 @@ import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 /**
- * An abstract class used to create new implementations of runtime {@link ClassLoader} scanners.
- * This abstract class is the one that is manipulated by the {@code Reflection#scan(File, ClassLoader)} method.
+ * Scan the resources of a {@link ClassLoader}'s classpath and store their simple metadata.
  *
  * @version 1.0
  * @since 1.0
  */
-public abstract class Scanner implements Runnable {
+public final class ClassPathScanner implements Runnable {
 	
 	private final ClassLoader classLoader;
+	private final Set<Filter> filters;
+	
 	private final Set<File> scannedUris;
 	private final Map<ClassLoader, Set<String>> resources;
 	
 	/**
-	 * Create a new {@link Scanner} object through one of its subclasses.
-	 * Depending on the logic implemented by its {@link #scanDirectory(File, ClassLoader, String)} and {@link #scanJarFile(JarFile, ClassLoader)}
-	 * methods, this {@link Scanner} will behave differently and return substantially different resources set.
-	 * @param classLoader The base {@link ClassLoader} for which the {@link Scanner} has been called.
+	 * Create a new {@link ClassPathScanner} object that will scan the provided {@link ClassLoader}'s classpath and apply some
+	 * {@link Filter}s to its resources.
+	 * @param classLoader The base {@link ClassLoader} for which the {@link ClassPathScanner} has been called.
+	 * @param filters A {@link Set} of specific filters to apply to the scanned resources.
 	 */
-	Scanner(ClassLoader classLoader) {
+	public ClassPathScanner(ClassLoader classLoader, Set<Filter> filters) {
 		this.classLoader = classLoader;
+		this.filters = filters;
+		
 		this.scannedUris = new HashSet<>();
 		this.resources = new HashMap<>();
 	}
-	
-	/**
-	 * @param classLoader The {@link ClassLoader} object the resource is attached to.
-	 * @param resourceName The complete name the resource.
-	 * @return Return {@code true} if the resource is accepted by the scanner; otherwise return {@code false}.
-	 */
-	protected abstract boolean acceptResource(ClassLoader classLoader, String resourceName);
 	
 	/**
 	 * Run a full scan of the provided {@link #classLoader} attribute.
@@ -114,7 +111,7 @@ public abstract class Scanner implements Runnable {
 			
 			if(file.isDirectory())
 				scanDirectory(file, classLoader, resourceName + '/');
-			else if(acceptResource(classLoader, resourceName))
+			else if(filters.isEmpty() || filters.stream().allMatch(filter -> filter.accept(classLoader, resourceName)))
 				addResource(classLoader, resourceName);
 		}
 	}
@@ -128,7 +125,9 @@ public abstract class Scanner implements Runnable {
 	private void scanJarFile(JarFile jarFile, ClassLoader classLoader) {
 		jarFile.stream()
 				.filter(entry -> !entry.isDirectory() && !entry.getName().equals(JarFile.MANIFEST_NAME))
-				.filter(entry -> acceptResource(classLoader, entry.getName()))
+				.filter(entry ->
+					filters.isEmpty() || filters.stream().allMatch(filter -> filter.accept(classLoader, entry.getName()))
+				)
 				.forEach(entry -> addResource(classLoader, entry.getName()));
 	}
 	
@@ -201,7 +200,7 @@ public abstract class Scanner implements Runnable {
 	 * @param resourceName The complete name of the new resource.
 	 * @return {@code true} if the resource could be added to the resources set; {@code false} otherwise.
 	 */
-	protected boolean addResource(ClassLoader classLoader, String resourceName) {
+	private boolean addResource(ClassLoader classLoader, String resourceName) {
 		if(!resources.containsKey(classLoader))
 			resources.put(classLoader, new LinkedHashSet<>());
 		return resources.get(classLoader).add(resourceName);

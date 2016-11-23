@@ -1,9 +1,9 @@
 package io.fries.reflection;
 
+import io.fries.reflection.filters.Filter;
 import io.fries.reflection.metadata.ClassMetadata;
 import io.fries.reflection.metadata.ResourceMetadata;
-import io.fries.reflection.scanners.DefaultScanner;
-import io.fries.reflection.scanners.Scanner;
+import io.fries.reflection.scanners.ClassPathScanner;
 
 import java.lang.annotation.Annotation;
 import java.util.HashSet;
@@ -14,13 +14,14 @@ import java.util.stream.Collectors;
 /**
  * Entry point of the Reflection API.
  *
- * Use the {@link #scan(ClassLoader)} method to process all the resources in your current {@link ClassLoader},
- * or the {@link #scan(Scanner)} method to process a {@link ClassLoader}'s resources using a specific {@link Scanner}.
+ * Use the {@link #of(ClassLoader)} method to create a new {@link Builder} object, used to configure
+ * the reflection process. You can add a set of specific {@link Filter}s which will be used by the {@link ClassPathScanner}
+ * to decide whether or not it should keep a resource's metadata.
  *
- * Then use the various {@code get()} methods to gather the resources you need!
+ * Once your {@link Builder} is correctly configured, simply call the {@link Builder#scan()} method to start the
+ * reflection process and return a fully instantiated {@link Reflection} object!
  *
- * No reference to any resource is created during this process: only their metadata are, which you can then use
- * to access them and thus create a reference to this specific resource.
+ * Then use the various {@code get} methods to gather the resources you need.
  *
  * @version 1.0
  * @since 1.0
@@ -30,40 +31,12 @@ public class Reflection {
 	private final Set<ResourceMetadata> resources;
 	
 	/**
-	 * Create a new {@link Reflection} object holding a {@link Set} of {@link ResourceMetadata} gathered by
-	 * a specific {@link Scanner} object when calling the {@link #scan(Scanner)} method.
-	 * @param resources The {@link Set<ResourceMetadata>} which were gathered by a specific {@link Scanner}.
+	 * Create a new {@link Reflection} object holding a {@link Set} of {@link ResourceMetadata}.
+	 * Only the {@link Builder} class is allowed to create a new instance of this class.
+	 * @param resources The {@link Set<ResourceMetadata>} which were gathered by a specific {@link ClassPathScanner}.
 	 */
 	private Reflection(Set<ResourceMetadata> resources) {
 		this.resources = resources;
-	}
-	
-	/**
-	 * When the {@code scan()} method is called without parameters, the current {@link Thread}'s {@link ClassLoader} is used.
-	 * @return A new {@link Reflection} instance holding a set of {@link ResourceMetadata}.
-	 */
-	public static Reflection scan() {
-		return scan(Thread.currentThread().getContextClassLoader());
-	}
-	
-	/**
-	 * @param classLoader The {@link ClassLoader} object which is to be scanned using the {@link DefaultScanner}.
-	 * @return A new {@link Reflection} instance holding a set of {@link ResourceMetadata}.
-	 */
-	public static Reflection scan(ClassLoader classLoader) {
-		return scan(new DefaultScanner(classLoader));
-	}
-	
-	/**
-	 * @param scanner The {@link Scanner} which will be ran to gather the required resources.
-	 * @return A new {@link Reflection} instance holding a set of {@link ResourceMetadata}.
-	 */
-	public static Reflection scan(Scanner scanner) {
-		if(scanner == null)
-			throw new IllegalArgumentException("Scanner parameter cannot be null.");
-		
-		scanner.run();
-		return new Reflection(scanner.getResources());
 	}
 	
 	/**
@@ -210,5 +183,57 @@ public class Reflection {
 		return getTypesRecursively(packagePrefix).stream()
 				.filter(c -> c.isAnnotationPresent(annotation))
 				.collect(Collectors.toSet());
+	}
+	
+	/**
+	 * @param classLoader The base {@link ClassLoader} from which the reflection process will begin.
+	 * @return A {@link Builder} object used for the configuration of the reflection process.
+	 */
+	public static Builder of(ClassLoader classLoader) {
+		return new Builder(classLoader);
+	}
+	
+	/**
+	 * Configuration object for the {@link Reflection} class.
+	 *
+	 * @version 1.0
+	 * @since 1.0
+	 */
+	public static class Builder {
+		
+		private final ClassLoader classLoader;
+		private final Set<Filter> filters;
+		
+		/**
+		 * @param classLoader The mandatory {@link ClassLoader} object.
+		 */
+		private Builder(ClassLoader classLoader) {
+			if(classLoader == null)
+				throw new IllegalArgumentException("ClassLoader cannot be null.");
+			
+			this.classLoader = classLoader;
+			this.filters = new HashSet<>();
+		}
+		
+		/**
+		 *
+		 * @param filter
+		 * @return This {@link Builder} instance.
+		 */
+		public Builder filter(Filter filter) {
+			filters.add(filter);
+			return this;
+		}
+		
+		/**
+		 * Create a new {@link ClassPathScanner} to proceed with the effective reflection.
+		 * @return Return the resulting {@link Reflection} object.
+		 */
+		public Reflection scan() {
+			ClassPathScanner classPathScanner = new ClassPathScanner(classLoader, filters);
+			classPathScanner.run();
+			
+			return new Reflection(classPathScanner.getResources());
+		}
 	}
 }

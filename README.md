@@ -18,9 +18,9 @@ I try to keep them focused on a single task in order to make them as reusable as
 
 Here are the direct links to the sub-projects `README.md` files:
 
- - [reflection](reflection/README.md): a personal implementation of Google's [Guava ClassPath](https://github.com/google/guava/blob/master/guava/src/com/google/common/reflect/ClassPath.java)
- - [spark-runner](spark-runner/README.md): an *annotation driven* library for [Spark Java](http://sparkjava.com/)
- - [bogger-ws](bogger-ws/README.md): currently a playground
+ - [reflection](reflection/README.md): a lightweight and easy to use runtime reflection library.
+ - [spark-runner](spark-runner/README.md): an *annotation driven* library for [Spark Java](http://sparkjava.com/).
+ - [bogger-ws](bogger-ws/README.md): currently a playground.
 
 ## Repository
 

@@ -1,82 +1,91 @@
 # reflection
 
-`reflection` is a simple library allowing you to scan the content of a `ClassLoader`'s classpath at runtime.
+`reflection` is a lightweight and easy to use library allowing you to scan the content of a `ClassLoader`'s
+classpath at runtime.
 
 ```java
-// Print all the resources to stdout
-Reflection.scan().getResources().forEach(System.out::println);
+// Print all the resources of the specified classLoader to stdout
+Reflection.of(classLoader).scan()
+          .getResources().forEach(System.out::println);
 ```
 
 ## Usage 
 
-A single entry point is exposed to use the `reflection` library: the `Reflection` class,
-with its `Reflection.scan(...)` method.
+A single entry point is exposed to use the `reflection` library: the `Reflection` class.
 
-3 variants of the `scan` method can be used:
+Use the `Reflection.of(classLoader)` method to create a new builder object that is used for the configuration of the
+reflection process.
 
-Without any parameter. in that case, `Thread.currentThread().getContextClassLoader()` is used with the `DefaultScanner`:
+Then each call to the `filter` method will add a custom `Filter` (see the **Filters** section below) to the
+configuration of our object.
+
+When you're all set, you just have to call the `scan` method. It will run the reflection process and return a fully
+initialized `Reflection` object.
+
 ```java
-Reflection reflection = Reflection.scan();
+Reflection r = Reflection.of(classLoader)
+                         .filter(new PackageFilter("com.example")
+                             .allowSubPackages()
+                         ).filter(new AnnotationFilter(MyAnnotation.class))
+                         .scan();
 ```
 
-Obviously, you can specify a `ClassLoader` (the `DefaultScanner` is also used):
+The `Reflection` exposes a set of simple methods:
+
+ - `getResources()` return all the scanned resources metadata.
+ - `getSimpleResources()` return all the non-class resources (`.properties`, `.xml`, ...) metadata.
+ 
+ 
+ - `getClasses()` return all the classes metadata.
+ - `getClasses(packageName)` return all classes metadata of resources located in a specific package.
+ - `getClassesRecursively(packagePrefix)` return all classes metadata by recursively searching into subpackages of `packagePrefix`.
+ 
+ 
+ - `getTopLevelClasses()` return only the top level classes (*inner classes* are ignored) metadata.
+ - `getTopLevelClasses(String packageName)` return only the top level classes metadata of resources located in a specific package.
+ - `getTopLevelClassesRecursively(String packagePrefix)` return all the top level classes metadata by recursively searching
+    into subpackages of `packagePrefix`.
+
+
+ - `getTypes()` load and return all the scanned classes.
+ - `getTypes(packageName)` load and return all the classes located in a specific package.
+ - `getTypesRecursively(packagePrefix)` load and return all the classes by recursively searching into subpackages of `packagePrefix`.
+ 
+ 
+ - `getAnnotatedTypes(annotation)` load and return all the classes annotated with the specified annotation.
+ - `getAnnotatedTypes(annotation, packageName)` load and return all the classes annotated with the specified annotation and
+    located in a specific package.
+ - `getAnnotatedTypesRecursively(annotation, packagePrefix)` load and return all the classes annotated with the specified
+    annotation by recursively searching into subpackages of `packagePrefix`.
+
+## Filters
+
+In order to refine the reflection process, you can add custom `Filter` objects while building your `Reflection` instance.
+
+Filters are simple classes implementing the `Filter` functional interface and its `accept(classLoader, resourceName)`
+method:
+
 ```java
-// You can scan any ClassLoader instance
-Reflection reflection = Reflection.scan(classLoader);
-```
-
-Or you can even use a custom `Scanner` implementation:
-```java
-// Call your Scanner with any ClassLoader instance, and send it to the method
-Reflection reflection = Reflection.scan(new MyScanner(classLoader));
-```
-
-Once your `Reflection` object has been initialized, you can access the resources metadata through a set of simple methods:
-
- - `getResources()` return all the scanned resources
- - `getSimpleResources()` return all the non-class resources (`.properties`, `.xml`, ...)
- - `getClasses()` return all the classes gathered by the `Scanner`
- - `getTopLevelClasses()` return only the top level classes (*inner classes* are ignored)
- - `getTopLevelClasses(String packageName)` return only the top level classes located in a specific package
- - `getTopLevelClassesRecursively(String packagePrefix)` return all the top level classes by recursively searching into
-    sub-packages of `packagePrefix`
-
-## Scanners
-
-`Scanner`s are classes that contain all the logic of the reflection process.
-
-You can create your own reflection logic by extending the `Scanner` abstract class: 
-```java
-public class MyScanner extends Scanner {
-    
-    public MyScanner(ClassLoader classLoader) {
-        super(classLoader);
-    }
-    
-    @Override
-    protected void scanDirectory(File dir, ClassLoader classLoader) {
-        // Do stuff with the directory
-    }
-    
-    @Override
-    protected void scanJarFile(JarFile jarFile, ClassLoader classLoader) {
-        // Do stuff with the JAR file
-    }
+// This is a silly example. Please don't do this.
+public class AngryFilter implements Filter {
+	
+	@Override
+	public boolean accept(ClassLoader classLoader, String resourceName) {
+		return false; // Because I'm ANGRY
+	}
 }
 ```
 
-The method `addResource(ClassLoader, String)` will then allow you store a resource into the `Scanner` context
-before handing it to the `Reflection` instance.
+Your filter can then be used by the `Reflection.Builder`:
+```java
+Reflection.of(classLoader).filter(new AngryFilter()).scan();
+```
 
-The `reflection` default scanners are located in the `io.fries.reflection.scanners` package: 
- 
- - `DefaultScanner` store all the classpath resources
- - `AnnotationScanner` store all the classes annotated with the provided annotations
+3 default filters are shipped with the `reflection` library:
 
-Please note that the *weight* of the reflection process highly depends on the `Scanner` implementation you use.
-
-While the `DefaultScanner` will accept any resource without loading them, it is mandatory for the `AnnotationScanner`
-to load the classes in the `ClassLoader` in order to inspect their annotations.
+ - `ManifestFilter` which exclude the `META-INF/MANIFEST.MF` file.
+ - `PackageFilter` which allow you to filter the resource's package *during* the reflection process.
+ - `AnnotationFilter` which will only accept the classes annotated with a specific set of annotations.
 
 ## Installation
 
@@ -88,7 +97,7 @@ Maven:
     <dependency>
         <groupId>io.fries</groupId>
         <artifactId>reflection</artifactId>
-        <version>1.0-RC1</version>
+        <version>1.0-RC2</version>
     </dependency>
 </dependencies>
 ```
@@ -102,6 +111,7 @@ dependencies {
 
 ## License 
 
-This project is a personal implementation of Google's [Guava ClassPath](https://github.com/google/guava/blob/master/guava/src/com/google/common/reflect/ClassPath.java).
+This project is inspired by Google's [Guava ClassPath](https://github.com/google/guava/blob/master/guava/src/com/google/common/reflect/ClassPath.java)
+implementation, with some personal features and improvements.
 
 Please see [LICENSE.md](LICENSE.md) for further details.
