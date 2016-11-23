@@ -1,12 +1,8 @@
 package spark.runner;
 
-import org.reflections.Reflections;
-import org.reflections.scanners.ResourcesScanner;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.scanners.TypeAnnotationsScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
+import io.fries.reflection.Reflection;
+import io.fries.reflection.scanners.AnnotationScanner;
+import io.fries.reflection.scanners.Scanner;
 import spark.ResponseTransformer;
 import spark.Route;
 import spark.Spark;
@@ -38,12 +34,12 @@ public final class SparkRunner {
 		new SparkConfiguration(applicationProperties).run();
 
 		// Gather all the application classes using reflection
-		Reflections reflections = getReflectionEngine();
+		Reflection reflection = getReflectionEngine();
 
-		Set<Class<?>> components = scanApplicationComponents(reflections);
+		Set<Class<?>> components = scanApplicationComponents(reflection);
 		storeComponents(components);
 
-		Set<Class<?>> webSockets = scanApplicationWebSockets(reflections);
+		Set<Class<?>> webSockets = scanApplicationWebSockets(reflection);
 		storeComponents(webSockets);
 
 		// Process injections in the main Application class
@@ -86,39 +82,30 @@ public final class SparkRunner {
 	/**
 	 * @return The configured reflection engine used to gather classes using their annotations.
 	 */
-	private Reflections getReflectionEngine() {
-		return new Reflections(
-			new ConfigurationBuilder()
-				.setScanners(
-					new SubTypesScanner(false),
-					new ResourcesScanner(),
-					new TypeAnnotationsScanner())
-				.setUrls(ClasspathHelper.forClassLoader(new ClassLoader[] {
-					ClasspathHelper.contextClassLoader(),
-					ClasspathHelper.staticClassLoader()
-				}))
-				.filterInputsBy(new FilterBuilder().include(FilterBuilder.prefix(applicationClass.getPackage().getName())))
-		);
+	private Reflection getReflectionEngine() {
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		Scanner scanner = new AnnotationScanner(classLoader, SparkComponent.class, SparkController.class, SparkWebSocket.class);
+		return Reflection.scan(scanner);
 	}
 
 	/**
-	 * @param reflections The reflection engine.
+	 * @param reflection The reflection engine.
 	 * @return A set of classes annotated using either the {@code SparkComponent} or {@code SparkController} annotations.
 	 */
-	private Set<Class<?>> scanApplicationComponents(Reflections reflections) {
-		Set<Class<?>> components = reflections.getTypesAnnotatedWith(SparkComponent.class);
-		Set<Class<?>> controllers = reflections.getTypesAnnotatedWith(SparkController.class);
+	private Set<Class<?>> scanApplicationComponents(Reflection reflection) {
+		Set<Class<?>> components = reflection.getAnnotatedTypesRecursively(SparkComponent.class, applicationClass.getPackage().getName());
+		Set<Class<?>> controllers = reflection.getAnnotatedTypesRecursively(SparkController.class, applicationClass.getPackage().getName());
 		components.addAll(controllers);
 
 		return components;
 	}
 
 	/**
-	 * @param reflections The reflection engine.
+	 * @param reflection The reflection engine.
 	 * @return A set of classes annotated using the {@code SparkWebSocket} annotation.
 	 */
-	private Set<Class<?>> scanApplicationWebSockets(Reflections reflections) {
-		return reflections.getTypesAnnotatedWith(SparkWebSocket.class);
+	private Set<Class<?>> scanApplicationWebSockets(Reflection reflection) {
+		return reflection.getAnnotatedTypesRecursively(SparkWebSocket.class, applicationClass.getPackage().getName());
 	}
 
 	/**

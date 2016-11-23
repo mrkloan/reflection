@@ -10,7 +10,7 @@ dependencies {
     compile 'org.slf4j:slf4j-simple:1.7.21'
 
     // Reflection libs
-    compile 'org.reflections:reflections:0.9.10'
+    compile project(':reflection')
 
     // Transformers libs
     compile 'com.google.code.gson:gson:2.8.0'
