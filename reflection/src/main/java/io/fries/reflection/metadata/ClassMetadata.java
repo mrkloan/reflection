@@ -36,7 +36,7 @@ public class ClassMetadata extends ResourceMetadata {
 		try {
 			return classLoader.loadClass(className);
 		}
-		catch(ClassNotFoundException e) {
+		catch(NoClassDefFoundError | ClassNotFoundException e) {
 			throw new IllegalStateException(e);
 		}
 	}

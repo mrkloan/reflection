@@ -102,16 +102,4 @@ public class ReflectionTest {
 					"com/test/handlers/meta/DefaultMetaHandler.class"
 				);
 	}
-	
-	@Test
-	public void getTopLevelClassesWithPackageWithoutMock() {
-		Reflection reflection = Reflection.scan();
-		
-		assertThat(reflection.getTopLevelClasses("io.fries.reflection"))
-				.extracting(ClassMetadata::getName)
-				.containsExactlyInAnyOrder(
-					"io.fries.reflection.Reflection",
-					"io.fries.reflection.ReflectionTest"
-				);
-	}
 }
