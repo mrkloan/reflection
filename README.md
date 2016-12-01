@@ -82,8 +82,8 @@ Reflection.of(classLoader).filter(new AngryFilter()).scan();
 
 3 default filters are shipped with the `reflection` library:
 
- - `ManifestFilter` which exclude the `META-INF/MANIFEST.MF` file.
- - `PackageFilter` which allow you to filter the resource's package *during* the reflection process.
+ - `ManifestFilter` which excludes the `META-INF/MANIFEST.MF` file.
+ - `PackageFilter` which allows you to filter the resource's package *during* the reflection process.
  - `AnnotationFilter` which will only accept the classes annotated with a specific set of annotations.
 
 ## Installation
