@@ -5,8 +5,7 @@ classpath at runtime.
 
 ```java
 // Print all the resources of the specified classLoader to stdout
-Reflection.of(classLoader).scan()
-          .getResources().forEach(System.out::println);
+Reflection.of(classLoader).scan().getResources().forEach(System.out::println);
 ```
 
 ## Usage 
@@ -93,19 +92,33 @@ And that's it! Now you just have to add `reflection` to your project dependencie
 
 Maven:
 ```xml
+<repositories>
+    <repository>
+        <id>fries-io</id>
+        <name>fries.io Maven Repository</name>
+        <url>http://maven.fries.io/</url>
+    </repository>
+</repositories>
+
 <dependencies>
     <dependency>
         <groupId>io.fries</groupId>
         <artifactId>reflection</artifactId>
-        <version>1.0-RC2</version>
+        <version>1.0</version>
     </dependency>
 </dependencies>
 ```
 
 Gradle:
 ```groovy
+repositories {
+    maven {
+        url 'http://maven.fries.io/'
+    }
+}
+
 dependencies {
-    compile 'io.fries:reflection:1.0-RC2'
+    compile 'io.fries:reflection:1.0'
 }
 ```
 
