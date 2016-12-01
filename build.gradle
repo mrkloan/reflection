@@ -1,21 +1,18 @@
-allprojects {
-    group 'io.fries'
-    version '0.1-SNAPSHOT'
+group 'io.fries'
+version '1.0'
+
+apply plugin: 'java'
+apply plugin: 'maven'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
 }
 
-subprojects {
-    apply plugin: 'java'
-
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
-
-    repositories {
-        mavenCentral()
-    }
-
-    dependencies {
-        testCompile 'junit:junit:4.11'
-        testCompile 'org.assertj:assertj-core:3.6.0'
-        testCompile 'org.mockito:mockito-all:1.10.19'
-    }
+dependencies {
+    testCompile 'junit:junit:4.11'
+    testCompile 'org.assertj:assertj-core:3.6.0'
+    testCompile 'org.mockito:mockito-all:1.10.19'
 }

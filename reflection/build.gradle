@@ -1,4 +1,0 @@
-version '1.0-RC2'
-
-apply plugin: 'maven'
-
