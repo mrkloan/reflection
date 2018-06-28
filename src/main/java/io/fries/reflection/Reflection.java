@@ -216,8 +216,7 @@ public class Reflection {
 		}
 		
 		/**
-		 *
-		 * @param filter
+		 * @param filter A filter to apply on the scanned resources.
 		 * @return This {@link Builder} instance.
 		 */
 		public Builder filter(Filter filter) {

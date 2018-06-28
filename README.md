@@ -22,11 +22,11 @@ When you're all set, you just have to call the `scan` method. It will run the re
 initialized `Reflection` object.
 
 ```java
-Reflection r = Reflection.of(classLoader)
-                         .filter(new PackageFilter("com.example")
-                             .allowSubPackages()
-                         ).filter(new AnnotationFilter(MyAnnotation.class))
-                         .scan();
+Reflection reflection = Reflection
+	.of(classLoader)
+	.filter(new PackageFilter("com.example").allowSubPackages())
+	.filter(new AnnotationFilter(MyAnnotation.class))
+	.scan();
 ```
 
 The `Reflection` exposes a set of simple methods:
@@ -43,7 +43,7 @@ The `Reflection` exposes a set of simple methods:
  - `getTopLevelClasses()` return only the top level classes (*inner classes* are ignored) metadata.
  - `getTopLevelClasses(String packageName)` return only the top level classes metadata of resources located in a specific package.
  - `getTopLevelClassesRecursively(String packagePrefix)` return all the top level classes metadata by recursively searching
-    into subpackages of `packagePrefix`.
+	into subpackages of `packagePrefix`.
 
 
  - `getTypes()` load and return all the scanned classes.
@@ -53,9 +53,9 @@ The `Reflection` exposes a set of simple methods:
  
  - `getAnnotatedTypes(annotation)` load and return all the classes annotated with the specified annotation.
  - `getAnnotatedTypes(annotation, packageName)` load and return all the classes annotated with the specified annotation and
-    located in a specific package.
+	located in a specific package.
  - `getAnnotatedTypesRecursively(annotation, packagePrefix)` load and return all the classes annotated with the specified
-    annotation by recursively searching into subpackages of `packagePrefix`.
+	annotation by recursively searching into subpackages of `packagePrefix`.
 
 ## Filters
 
@@ -88,43 +88,34 @@ Reflection.of(classLoader).filter(new AngryFilter()).scan();
 
 ## Installation
 
-And that's it! Now you just have to add `reflection` to your project dependencies to get ready:
+Gradle:
+```groovy
+allprojects {
+	repositories {
+		...
+		maven { url 'https://jitpack.io' }
+	}
+}
+
+dependencies {
+	implementation 'com.github.MrKloan:reflection:master'
+}
+```
 
 Maven:
 ```xml
 <repositories>
-    <repository>
-        <id>fries-io</id>
-        <name>fries.io Maven Repository</name>
-        <url>http://maven.fries.io/</url>
-    </repository>
+	<repository>
+		<id>jitpack.io</id>
+		<url>https://jitpack.io</url>
+	</repository>
 </repositories>
 
 <dependencies>
-    <dependency>
-        <groupId>io.fries</groupId>
-        <artifactId>reflection</artifactId>
-        <version>1.0</version>
-    </dependency>
+	<dependency>
+		<groupId>com.github.MrKloan</groupId>
+		<artifactId>reflection</artifactId>
+		<version>master</version>
+	</dependency>
 </dependencies>
 ```
-
-Gradle:
-```groovy
-repositories {
-    maven {
-        url 'http://maven.fries.io/'
-    }
-}
-
-dependencies {
-    compile 'io.fries:reflection:1.0'
-}
-```
-
-## License 
-
-This project is inspired by Google's [Guava ClassPath](https://github.com/google/guava/blob/master/guava/src/com/google/common/reflect/ClassPath.java)
-implementation, with some personal features and improvements.
-
-Please see [LICENSE.md](LICENSE.md) for further details.

@@ -1,3 +1,5 @@
-**/.idea/
-**/build/
-**/.gradle/
+reflection.iml
+/.idea/
+
+/build/
+/.gradle/
