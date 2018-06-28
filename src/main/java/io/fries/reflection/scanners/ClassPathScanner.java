@@ -198,7 +198,9 @@ public final class ClassPathScanner implements Scanner {
 		return stream(classPath.split(" "))
 			.filter(path -> !path.isEmpty())
 			.map(path -> getClassPathEntry(jarFile, path))
-			.filter(url -> url != null && url.getProtocol().equals("file"))
+			.filter(Optional::isPresent)
+			.map(Optional::get)
+			.filter(url -> url.getProtocol().equals("file"))
 			.map(url -> new File(url.getFile()))
 			.collect(Collectors.toSet());
 	}
@@ -210,12 +212,12 @@ public final class ClassPathScanner implements Scanner {
 	 * @return A new {@link URL} object to the provided class path entry,
 	 * or {@code null} if a {@link MalformedURLException} is thrown.
 	 */
-	private URL getClassPathEntry(final File file, final String path) {
+	private Optional<URL> getClassPathEntry(final File file, final String path) {
 		try {
-			return new URL(file.toURI().toURL(), path);
+			return Optional.of(new URL(file.toURI().toURL(), path));
 		}
 		catch(final MalformedURLException e) {
-			return null;
+			return Optional.empty();
 		}
 	}
 	

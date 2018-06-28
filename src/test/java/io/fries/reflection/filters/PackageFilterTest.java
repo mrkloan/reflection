@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.*;
 public class PackageFilterTest {
 	
 	@Test
-	public void validPackage()  {
+	public void validPackage() {
 		final Filter filter = new PackageFilter("com.example");
 		
 		final boolean accepted = filter.accept(null, "com/example/resource.properties");
@@ -16,7 +16,7 @@ public class PackageFilterTest {
 	}
 	
 	@Test
-	public void invalidPackage()  {
+	public void invalidPackage() {
 		final Filter filter = new PackageFilter("com.example");
 		
 		final boolean accepted = filter.accept(null, "com/example/sub/resource.properties");
@@ -25,7 +25,7 @@ public class PackageFilterTest {
 	}
 	
 	@Test
-	public void validSubPackage()  {
+	public void validSubPackage() {
 		final Filter filter = new PackageFilter("com.example").allowSubpackages();
 		
 		final boolean accepted = filter.accept(null, "com/example/sub/resource.properties");
@@ -34,12 +34,12 @@ public class PackageFilterTest {
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
-	public void nullPackage()  {
+	public void nullPackage() {
 		new PackageFilter(null);
 	}
 	
 	@Test
-	public void validEmptyPackage()  {
+	public void validEmptyPackage() {
 		final Filter filter = new PackageFilter("");
 		
 		final boolean accepted = filter.accept(null, "resource.properties");

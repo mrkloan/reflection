@@ -23,8 +23,9 @@ public class ClassMetadata extends ResourceMetadata {
 	 * Create a new {@code ClassMetadata} object.
 	 * While {@link #load()} has not been called, the class is not loaded into the class loader
 	 * and thus no reference to it is held in any way.
+	 *
 	 * @param resourceName The complete name of this resource.
-	 * @param classLoader The {@code ClassLoader} object to which this resource is bound.
+	 * @param classLoader  The {@code ClassLoader} object to which this resource is bound.
 	 */
 	public ClassMetadata(final String resourceName, final ClassLoader classLoader) {
 		super(resourceName, classLoader);
@@ -35,6 +36,7 @@ public class ClassMetadata extends ResourceMetadata {
 	
 	/**
 	 * Load the current class into its class loader.
+	 *
 	 * @return An {@link Optional} of the {@code Class<?>} object resulting of the class loader operation.
 	 */
 	public Optional<Class<?>> load() {

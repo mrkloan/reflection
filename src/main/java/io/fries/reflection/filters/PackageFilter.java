@@ -10,6 +10,7 @@ public class PackageFilter implements Filter {
 	
 	private final String packageName;
 	private Mode mode;
+	
 	/**
 	 * @param packageName The name of the base package.
 	 */

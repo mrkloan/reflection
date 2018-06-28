@@ -12,13 +12,14 @@ import java.util.NoSuchElementException;
  */
 public class ResourceMetadata {
 	
-	protected final String resourceName;
-	protected final ClassLoader classLoader;
+	final ClassLoader classLoader;
+	private final String resourceName;
 	
 	/**
 	 * Create a new {@link ResourceMetadata} object referencing a resource in the current class path.
+	 *
 	 * @param resourceName The complete name of this resource.
-	 * @param classLoader The {@link ClassLoader} object to which this resource is bound.
+	 * @param classLoader  The {@link ClassLoader} object to which this resource is bound.
 	 */
 	public ResourceMetadata(final String resourceName, final ClassLoader classLoader) {
 		this.resourceName = resourceName;
@@ -27,8 +28,10 @@ public class ResourceMetadata {
 	
 	/**
 	 * Check if the provided resource is a class file in order to instantiate the correct {@link ResourceMetadata} object.
+	 *
 	 * @param resourceName The complete name of the resource
-	 * @param classLoader The {@link ClassLoader} object to which the resource is bound.
+	 * @param classLoader  The {@link ClassLoader} object to which the resource is bound.
+	 *
 	 * @return A newly instantiated {@link ResourceMetadata} object.
 	 */
 	public static ResourceMetadata create(final String resourceName, final ClassLoader classLoader) {
@@ -66,7 +69,7 @@ public class ResourceMetadata {
 		if(!(obj instanceof ResourceMetadata))
 			return false;
 		
-		final ResourceMetadata resource = (ResourceMetadata)obj;
+		final ResourceMetadata resource = (ResourceMetadata) obj;
 		return resourceName.equals(resource.resourceName) && classLoader == resource.classLoader;
 	}
 	

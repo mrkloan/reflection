@@ -43,8 +43,8 @@ public class ReflectionTest {
 			.extracting(ResourceMetadata::getResource)
 			.containsExactlyInAnyOrder(
 				resources.stream()
-					 .map(ResourceMetadata::getResource)
-					 .toArray(size -> new String[resources.size()])
+					.map(ResourceMetadata::getResource)
+					.toArray(size -> new String[resources.size()])
 			);
 	}
 	
