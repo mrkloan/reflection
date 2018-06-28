@@ -10,18 +10,18 @@ public class ManifestFilterTest {
 	
 	@Test
 	public void accept() {
-		Filter filter = new ManifestFilter();
+		final Filter filter = new ManifestFilter();
 		
-		boolean accepted = filter.accept(null, "application.properties");
+		final boolean accepted = filter.accept(null, "application.properties");
 		
 		assertThat(accepted).isTrue();
 	}
 	
 	@Test
 	public void deny() {
-		Filter filter = new ManifestFilter();
+		final Filter filter = new ManifestFilter();
 		
-		boolean accepted = filter.accept(null, JarFile.MANIFEST_NAME);
+		final boolean accepted = filter.accept(null, JarFile.MANIFEST_NAME);
 		
 		assertThat(accepted).isFalse();
 	}

@@ -8,15 +8,12 @@ package io.fries.reflection.filters;
  */
 public class PackageFilter implements Filter {
 	
-	private enum Mode { STRICT, ALLOW_SUBPACKAGES }
-	
-	private Mode mode;
 	private final String packageName;
-	
+	private Mode mode;
 	/**
 	 * @param packageName The name of the base package.
 	 */
-	public PackageFilter(String packageName) {
+	public PackageFilter(final String packageName) {
 		if(packageName == null)
 			throw new IllegalArgumentException("Package name cannot be null. Please use an empty string (\"\") if you meant the root package.");
 		
@@ -28,16 +25,17 @@ public class PackageFilter implements Filter {
 	 * @see Filter#accept(ClassLoader, String)
 	 */
 	@Override
-	public boolean accept(ClassLoader classLoader, String resourceName) {
-		int lastSeparator = resourceName.lastIndexOf('/');
+	public boolean accept(final ClassLoader classLoader, final String resourceName) {
+		final int lastSeparator = resourceName.lastIndexOf('/');
 		
 		if(packageName.isEmpty())
 			return lastSeparator == -1;
 		
-		String resourcePackage = resourceName.substring(0, lastSeparator).replace('/', '.');
+		final String resourcePackage = resourceName.substring(0, lastSeparator).replace('/', '.');
 		
-		return mode == Mode.STRICT ? resourcePackage.equals(packageName)
-								   : resourcePackage.startsWith(packageName);
+		return mode == Mode.STRICT
+			? resourcePackage.equals(packageName)
+			: resourcePackage.startsWith(packageName);
 	}
 	
 	/**
@@ -47,4 +45,6 @@ public class PackageFilter implements Filter {
 		this.mode = Mode.ALLOW_SUBPACKAGES;
 		return this;
 	}
+	
+	private enum Mode {STRICT, ALLOW_SUBPACKAGES}
 }

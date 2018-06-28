@@ -14,7 +14,7 @@ public class ManifestFilter implements Filter {
 	 * @see Filter#accept(ClassLoader, String)
 	 */
 	@Override
-	public boolean accept(ClassLoader classLoader, String resourceName) {
+	public boolean accept(final ClassLoader classLoader, final String resourceName) {
 		return !resourceName.equals(JarFile.MANIFEST_NAME);
 	}
 }

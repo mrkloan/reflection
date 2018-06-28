@@ -25,7 +25,7 @@ public class AnnotationFilter implements Filter {
 	 * @param annotations The array of annotation classes required for each resource.
 	 */
 	@SafeVarargs
-	public AnnotationFilter(Class<? extends Annotation>... annotations) {
+	public AnnotationFilter(final Class<? extends Annotation>... annotations) {
 		if(annotations.length == 0)
 			throw new IllegalArgumentException("Filtered annotations list cannot be empty.");
 		
@@ -38,7 +38,7 @@ public class AnnotationFilter implements Filter {
 	 * @see Filter#accept(ClassLoader, String)
 	 */
 	@Override
-	public boolean accept(ClassLoader classLoader, String resourceName) {
+	public boolean accept(final ClassLoader classLoader, final String resourceName) {
 		final ResourceMetadata resourceMetadata = ResourceMetadata.create(resourceName, classLoader);
 		
 		if(!(resourceMetadata instanceof ClassMetadata))

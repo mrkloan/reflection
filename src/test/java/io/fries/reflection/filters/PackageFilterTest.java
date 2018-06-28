@@ -8,27 +8,27 @@ public class PackageFilterTest {
 	
 	@Test
 	public void validPackage()  {
-		Filter filter = new PackageFilter("com.example");
+		final Filter filter = new PackageFilter("com.example");
 		
-		boolean accepted = filter.accept(null, "com/example/resource.properties");
+		final boolean accepted = filter.accept(null, "com/example/resource.properties");
 		
 		assertThat(accepted).isTrue();
 	}
 	
 	@Test
 	public void invalidPackage()  {
-		Filter filter = new PackageFilter("com.example");
+		final Filter filter = new PackageFilter("com.example");
 		
-		boolean accepted = filter.accept(null, "com/example/sub/resource.properties");
+		final boolean accepted = filter.accept(null, "com/example/sub/resource.properties");
 		
 		assertThat(accepted).isFalse();
 	}
 	
 	@Test
 	public void validSubPackage()  {
-		Filter filter = new PackageFilter("com.example").allowSubpackages();
+		final Filter filter = new PackageFilter("com.example").allowSubpackages();
 		
-		boolean accepted = filter.accept(null, "com/example/sub/resource.properties");
+		final boolean accepted = filter.accept(null, "com/example/sub/resource.properties");
 		
 		assertThat(accepted).isTrue();
 	}
@@ -40,9 +40,9 @@ public class PackageFilterTest {
 	
 	@Test
 	public void validEmptyPackage()  {
-		Filter filter = new PackageFilter("");
+		final Filter filter = new PackageFilter("");
 		
-		boolean accepted = filter.accept(null, "resource.properties");
+		final boolean accepted = filter.accept(null, "resource.properties");
 		
 		assertThat(accepted).isTrue();
 	}

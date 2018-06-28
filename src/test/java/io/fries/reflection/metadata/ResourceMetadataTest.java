@@ -11,13 +11,13 @@ public class ResourceMetadataTest {
 	
 	@Test
 	public void createClass() {
-		ResourceMetadata resourceMetadata = ResourceMetadata.create(CLASS_RESOURCE, null);
+		final ResourceMetadata resourceMetadata = ResourceMetadata.create(CLASS_RESOURCE, null);
 		assertThat(resourceMetadata).isInstanceOf(ClassMetadata.class);
 	}
 	
 	@Test
 	public void createResource() {
-		ResourceMetadata resourceMetadata = ResourceMetadata.create(SIMPLE_RESOURCE, null);
+		final ResourceMetadata resourceMetadata = ResourceMetadata.create(SIMPLE_RESOURCE, null);
 		assertThat(resourceMetadata).isNotInstanceOf(ClassMetadata.class);
 	}
 }

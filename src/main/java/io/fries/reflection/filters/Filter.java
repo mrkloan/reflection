@@ -14,5 +14,5 @@ public interface Filter {
 	 * @param resourceName The complete name of the resource.
 	 * @return Return {@code true} is the resource matches the filter's criteria; otherwise return {@code false}.
 	 */
-	boolean accept(ClassLoader classLoader, String resourceName);
+	boolean accept(final ClassLoader classLoader, final String resourceName);
 }
