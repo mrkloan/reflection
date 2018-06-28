@@ -9,6 +9,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -57,8 +58,23 @@ public final class ClassPathScanner implements Scanner {
 	 * @return This {@link ClassPathScanner} instance.
 	 */
 	public ClassPathScanner filter(final Filter filter) {
+		if(filter == null)
+			throw new IllegalArgumentException("Filter cannot be null");
+		
 		this.filters.add(filter);
 		return this;
+	}
+	
+	/**
+	 * @param filterSupplier A {@link Supplier} of any {@link Filter} instance to apply on the scanned resources.
+	 *
+	 * @return This {@link ClassPathScanner} instance.
+	 */
+	public ClassPathScanner filter(final Supplier<Filter> filterSupplier) {
+		if(filterSupplier == null)
+			throw new IllegalArgumentException("Filter supplier cannot be null");
+		
+		return filter(filterSupplier.get());
 	}
 	
 	/**

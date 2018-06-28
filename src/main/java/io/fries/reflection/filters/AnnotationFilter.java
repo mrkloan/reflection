@@ -4,11 +4,11 @@ import io.fries.reflection.metadata.ClassMetadata;
 import io.fries.reflection.metadata.ResourceMetadata;
 
 import java.lang.annotation.Annotation;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Accept only the classes annotated with a certain set of annotations.
@@ -18,20 +18,29 @@ import static java.util.Arrays.asList;
  */
 public class AnnotationFilter implements Filter {
 	
+	private final Mode mode;
 	private final Set<Class<? extends Annotation>> annotations;
-	private Mode mode;
 	
 	/**
 	 * @param annotations The array of annotation classes required for each resource.
 	 */
 	@SafeVarargs
-	public AnnotationFilter(final Class<? extends Annotation>... annotations) {
-		if(annotations.length == 0)
+	private AnnotationFilter(final Mode mode, final Class<? extends Annotation>... annotations) {
+		if(annotations == null || annotations.length == 0)
 			throw new IllegalArgumentException("Filtered annotations list cannot be empty.");
 		
-		this.mode = Mode.ANY;
-		this.annotations = new HashSet<>();
-		this.annotations.addAll(asList(annotations));
+		this.mode = mode;
+		this.annotations = stream(annotations).collect(toSet());
+	}
+	
+	@SafeVarargs
+	public static AnnotationFilter any(final Class<? extends Annotation>... annotations) {
+		return new AnnotationFilter(Mode.ANY, annotations);
+	}
+	
+	@SafeVarargs
+	public static AnnotationFilter all(final Class<? extends Annotation>... annotations) {
+		return new AnnotationFilter(Mode.ALL, annotations);
 	}
 	
 	/**
@@ -55,14 +64,6 @@ public class AnnotationFilter implements Filter {
 		return mode == Mode.ALL
 			? annotations.stream().allMatch(resourceClass::isAnnotationPresent)
 			: annotations.stream().anyMatch(resourceClass::isAnnotationPresent);
-	}
-	
-	/**
-	 * @return This {@link AnnotationFilter} instance.
-	 */
-	public AnnotationFilter allRequired() {
-		this.mode = Mode.ALL;
-		return this;
 	}
 	
 	private enum Mode {ANY, ALL}

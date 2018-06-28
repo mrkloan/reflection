@@ -5,31 +5,37 @@ classpath at runtime.
 
 ```java
 // Print all the resources of the specified classLoader to stdout
-Reflection.of(classLoader).scan().getResources().forEach(System.out::println);
+Reflection
+	.of(ClassPathScanner.of(classLoader))
+	.getResources()
+	.forEach(System.out::println);
 ```
 
 ## Usage 
 
-A single entry point is exposed to use the `reflection` library: the `Reflection` class.
+A single entry point is exposed to use the `reflection` library: the `Reflection` class, which requires a `Scanner`
+instance to provide resources metadata.
 
-Use the `Reflection.of(classLoader)` method to create a new builder object that is used for the configuration of the
-reflection process.
+Use the `ClassPathScanner.of(instance)` method to create a new scanner object that will perform the reflection process.
+You can call the `filter` method to add a custom `Filter` (see the **Filters** section below) applied during the 
+classpath scanning.
 
-Then each call to the `filter` method will add a custom `Filter` (see the **Filters** section below) to the
-configuration of our object.
-
-When you're all set, you just have to call the `scan` method. It will run the reflection process and return a fully
-initialized `Reflection` object.
+When you're all set, you just have to call the `Reflection.of(scanner)` method. It will run the reflection process and
+return a fully initialized `Reflection` object.
 
 ```java
-Reflection reflection = Reflection
+final Scanner scanner = ClassPathScanner
 	.of(classLoader)
-	.filter(new PackageFilter("com.example").allowSubPackages())
-	.filter(new AnnotationFilter(MyAnnotation.class))
-	.scan();
+	.filter(PackageFilter.withSubpackages("com.example"))
+	.filter(AnnotationFilter.all(MyAnnotation.class));
+
+final Reflection reflection = Reflection.of(scanner);
 ```
 
-The `Reflection` exposes a set of simple methods:
+You can obviously create your own implementation of the `Scanner` interface, and use it as the configuration object for
+a `Reflection` instance.
+
+The `Reflection` object exposes a set of simple methods:
 
  - `getResources()` return all the scanned resources metadata.
  - `getSimpleResources()` return all the non-class resources (`.properties`, `.xml`, ...) metadata.
@@ -59,7 +65,8 @@ The `Reflection` exposes a set of simple methods:
 
 ## Filters
 
-In order to refine the reflection process, you can add custom `Filter` objects while building your `Reflection` instance.
+In order to refine the reflection process, you can add custom `Filter` objects while building your `ClassPathScanner` 
+instance.
 
 Filters are simple classes implementing the `Filter` functional interface and its `accept(classLoader, resourceName)`
 method:
@@ -69,15 +76,24 @@ method:
 public class AngryFilter implements Filter {
 	
 	@Override
-	public boolean accept(ClassLoader classLoader, String resourceName) {
-		return false; // Because I'm ANGRY
+	public boolean accept(final ClassLoader classLoader, final String resourceName) {
+		return false;
 	}
 }
 ```
 
-Your filter can then be used by the `Reflection.Builder`:
+Your filter can then be used during the `ClassPathScanner` configuration phase:
 ```java
-Reflection.of(classLoader).filter(new AngryFilter()).scan();
+ClassPathScanner
+	.of(classLoader)
+	.filter(AngryFilter::new);
+```
+
+Simple filters can also be implemented using a lambda:
+```java
+ClassPathScanner
+	.of(classLoader)
+	.filter((resourceClassLoader, resourceName) -> resourceName.contains("Filter"));
 ```
 
 3 default filters are shipped with the `reflection` library:

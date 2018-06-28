@@ -8,7 +8,7 @@ public class PackageFilterTest {
 	
 	@Test
 	public void validPackage() {
-		final Filter filter = new PackageFilter("com.example");
+		final Filter filter = PackageFilter.of("com.example");
 		
 		final boolean accepted = filter.accept(null, "com/example/resource.properties");
 		
@@ -17,7 +17,7 @@ public class PackageFilterTest {
 	
 	@Test
 	public void invalidPackage() {
-		final Filter filter = new PackageFilter("com.example");
+		final Filter filter = PackageFilter.of("com.example");
 		
 		final boolean accepted = filter.accept(null, "com/example/sub/resource.properties");
 		
@@ -26,7 +26,7 @@ public class PackageFilterTest {
 	
 	@Test
 	public void validSubPackage() {
-		final Filter filter = new PackageFilter("com.example").allowSubpackages();
+		final Filter filter = PackageFilter.withSubpackages("com.example");
 		
 		final boolean accepted = filter.accept(null, "com/example/sub/resource.properties");
 		
@@ -35,12 +35,12 @@ public class PackageFilterTest {
 	
 	@Test(expected = IllegalArgumentException.class)
 	public void nullPackage() {
-		new PackageFilter(null);
+		PackageFilter.of(null);
 	}
 	
 	@Test
 	public void validEmptyPackage() {
-		final Filter filter = new PackageFilter("");
+		final Filter filter = PackageFilter.of("");
 		
 		final boolean accepted = filter.accept(null, "resource.properties");
 		

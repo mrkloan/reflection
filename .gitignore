@@ -1,5 +1,6 @@
 reflection.iml
 /.idea/
 
+/out/
 /build/
 /.gradle/
