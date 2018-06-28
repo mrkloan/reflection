@@ -4,9 +4,11 @@ import io.fries.reflection.metadata.ClassMetadata;
 import io.fries.reflection.metadata.ResourceMetadata;
 
 import java.lang.annotation.Annotation;
-import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+
+import static java.util.Arrays.asList;
 
 /**
  * Accept only the classes annotated with a certain set of annotations.
@@ -16,22 +18,20 @@ import java.util.Set;
  */
 public class AnnotationFilter implements Filter {
 	
-	private enum Mode { ANY, ALL }
-	
-	private Mode mode;
 	private final Set<Class<? extends Annotation>> annotations;
+	private Mode mode;
 	
 	/**
 	 * @param annotations The array of annotation classes required for each resource.
 	 */
 	@SafeVarargs
-	public AnnotationFilter(Class<? extends Annotation> ...annotations) {
+	public AnnotationFilter(Class<? extends Annotation>... annotations) {
 		if(annotations.length == 0)
 			throw new IllegalArgumentException("Filtered annotations list cannot be empty.");
 		
 		this.mode = Mode.ANY;
 		this.annotations = new HashSet<>();
-		Arrays.stream(annotations).forEach(this.annotations::add);
+		this.annotations.addAll(asList(annotations));
 	}
 	
 	/**
@@ -39,21 +39,22 @@ public class AnnotationFilter implements Filter {
 	 */
 	@Override
 	public boolean accept(ClassLoader classLoader, String resourceName) {
-		ResourceMetadata resourceMetadata = ResourceMetadata.create(resourceName, classLoader);
+		final ResourceMetadata resourceMetadata = ResourceMetadata.create(resourceName, classLoader);
 		
 		if(!(resourceMetadata instanceof ClassMetadata))
 			return false;
 		
-		try {
-			ClassMetadata classMetadata = (ClassMetadata)resourceMetadata;
-			Class<?> resourceClass = classMetadata.load();
-			
-			return mode == Mode.ALL ? annotations.stream().allMatch(resourceClass::isAnnotationPresent)
-									: annotations.stream().anyMatch(resourceClass::isAnnotationPresent);
-		}
-		catch(IllegalStateException e) {
+		final ClassMetadata classMetadata = (ClassMetadata) resourceMetadata;
+		final Optional<Class<?>> loadedResource = classMetadata.load();
+		
+		if(!loadedResource.isPresent())
 			return false;
-		}
+		
+		final Class<?> resourceClass = loadedResource.get();
+		
+		return mode == Mode.ALL
+			? annotations.stream().allMatch(resourceClass::isAnnotationPresent)
+			: annotations.stream().anyMatch(resourceClass::isAnnotationPresent);
 	}
 	
 	/**
@@ -63,4 +64,6 @@ public class AnnotationFilter implements Filter {
 		this.mode = Mode.ALL;
 		return this;
 	}
+	
+	private enum Mode {ANY, ALL}
 }

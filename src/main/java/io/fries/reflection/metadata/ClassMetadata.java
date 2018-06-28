@@ -1,5 +1,10 @@
 package io.fries.reflection.metadata;
 
+import java.util.Optional;
+
+import static java.util.Optional.empty;
+import static java.util.Optional.ofNullable;
+
 /**
  * Simple object storing a class' metadata.
  * Can be used to load the class into its {@link ClassLoader} using the {@link #load()} method.
@@ -9,7 +14,7 @@ package io.fries.reflection.metadata;
  */
 public class ClassMetadata extends ResourceMetadata {
 	
-	public static final String CLASS_FILE_EXTENSION = ".class";
+	static final String CLASS_FILE_EXTENSION = ".class";
 	
 	private final String className;
 	private final String packageName;
@@ -21,7 +26,7 @@ public class ClassMetadata extends ResourceMetadata {
 	 * @param resourceName The complete name of this resource.
 	 * @param classLoader The {@code ClassLoader} object to which this resource is bound.
 	 */
-	public ClassMetadata(String resourceName, ClassLoader classLoader) {
+	public ClassMetadata(final String resourceName, final ClassLoader classLoader) {
 		super(resourceName, classLoader);
 		
 		this.className = resourceName.substring(0, resourceName.length() - CLASS_FILE_EXTENSION.length()).replace('/', '.');
@@ -30,14 +35,14 @@ public class ClassMetadata extends ResourceMetadata {
 	
 	/**
 	 * Load the current class into its class loader.
-	 * @return The {@code Class<?>} object resulting of the class loader operation.
+	 * @return An {@link Optional} of the {@code Class<?>} object resulting of the class loader operation.
 	 */
-	public Class<?> load() {
+	public Optional<Class<?>> load() {
 		try {
-			return classLoader.loadClass(className);
+			return ofNullable(classLoader.loadClass(className));
 		}
 		catch(NoClassDefFoundError | ClassNotFoundException e) {
-			throw new IllegalStateException(e);
+			return empty();
 		}
 	}
 	
@@ -59,11 +64,11 @@ public class ClassMetadata extends ResourceMetadata {
 	 * @return The simple name of the class (without its package name).
 	 */
 	public String getSimpleName() {
-		int lastDollar = className.lastIndexOf('$');
+		final int lastDollar = className.lastIndexOf('$');
 		
-		if(lastDollar != -1)
-			return className.substring(lastDollar + 1);
-		return packageName.isEmpty() ? className : className.substring(packageName.length() + 1);
+		return (lastDollar != -1)
+			? className.substring(lastDollar + 1)
+			: packageName.isEmpty() ? className : className.substring(packageName.length() + 1);
 	}
 	
 	@Override

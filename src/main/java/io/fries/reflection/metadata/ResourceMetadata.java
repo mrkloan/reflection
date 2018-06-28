@@ -20,7 +20,7 @@ public class ResourceMetadata {
 	 * @param resourceName The complete name of this resource.
 	 * @param classLoader The {@link ClassLoader} object to which this resource is bound.
 	 */
-	public ResourceMetadata(String resourceName, ClassLoader classLoader) {
+	public ResourceMetadata(final String resourceName, final ClassLoader classLoader) {
 		this.resourceName = resourceName;
 		this.classLoader = classLoader;
 	}
@@ -31,21 +31,21 @@ public class ResourceMetadata {
 	 * @param classLoader The {@link ClassLoader} object to which the resource is bound.
 	 * @return A newly instantiated {@link ResourceMetadata} object.
 	 */
-	public static ResourceMetadata create(String resourceName, ClassLoader classLoader) {
-		if(resourceName.endsWith(ClassMetadata.CLASS_FILE_EXTENSION))
-			return new ClassMetadata(resourceName, classLoader);
-		else
-			return new ResourceMetadata(resourceName, classLoader);
+	public static ResourceMetadata create(final String resourceName, final ClassLoader classLoader) {
+		return (resourceName.endsWith(ClassMetadata.CLASS_FILE_EXTENSION))
+			? new ClassMetadata(resourceName, classLoader)
+			: new ResourceMetadata(resourceName, classLoader);
 	}
 	
 	/**
 	 * @return The URL to this resource in the current class path.
 	 */
 	public URL getUrl() {
-		URL url = classLoader.getResource(resourceName);
+		final URL url = classLoader.getResource(resourceName);
 		
 		if(url == null)
 			throw new NoSuchElementException(resourceName);
+		
 		return url;
 	}
 	
@@ -62,12 +62,12 @@ public class ResourceMetadata {
 	}
 	
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(final Object obj) {
 		if(!(obj instanceof ResourceMetadata))
 			return false;
 		
-		ResourceMetadata ri = (ResourceMetadata)obj;
-		return resourceName.equals(ri.resourceName) && classLoader == ri.classLoader;
+		final ResourceMetadata resource = (ResourceMetadata)obj;
+		return resourceName.equals(resource.resourceName) && classLoader == resource.classLoader;
 	}
 	
 	@Override

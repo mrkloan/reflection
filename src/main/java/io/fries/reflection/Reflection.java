@@ -1,42 +1,47 @@
 package io.fries.reflection;
 
-import io.fries.reflection.filters.Filter;
 import io.fries.reflection.metadata.ClassMetadata;
 import io.fries.reflection.metadata.ResourceMetadata;
-import io.fries.reflection.scanners.ClassPathScanner;
+import io.fries.reflection.scanners.Scanner;
 
 import java.lang.annotation.Annotation;
 import java.util.HashSet;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * Entry point of the Reflection API.
- *
- * Use the {@link #of(ClassLoader)} method to create a new {@link Builder} object, used to configure
- * the reflection process. You can add a set of specific {@link Filter}s which will be used by the {@link ClassPathScanner}
- * to decide whether or not it should keep a resource's metadata.
- *
- * Once your {@link Builder} is correctly configured, simply call the {@link Builder#scan()} method to start the
- * reflection process and return a fully instantiated {@link Reflection} object!
- *
+ * <p>
+ * Use the {@link Reflection#of(Scanner)} method to create a new {@link Reflection} object.
+ * <p>
  * Then use the various {@code get} methods to gather the resources you need.
  *
  * @version 1.0
  * @since 1.0
  */
+@SuppressWarnings("WeakerAccess")
 public class Reflection {
 	
 	private final Set<ResourceMetadata> resources;
 	
 	/**
 	 * Create a new {@link Reflection} object holding a {@link Set} of {@link ResourceMetadata}.
-	 * Only the {@link Builder} class is allowed to create a new instance of this class.
-	 * @param resources The {@link Set<ResourceMetadata>} which were gathered by a specific {@link ClassPathScanner}.
+	 * Only the {@link Reflection#of(Scanner)} method can be used to create a new instance of this class.
+	 *
+	 * @param resources The {@link Set<ResourceMetadata>} which were gathered by a specific {@link Scanner}.
 	 */
-	private Reflection(Set<ResourceMetadata> resources) {
+	private Reflection(final Set<ResourceMetadata> resources) {
 		this.resources = resources;
+	}
+	
+	/**
+	 * @param scanner The {@link Scanner} instance to which the reflection process is delegated.
+	 *
+	 * @return A {@link Reflection} instance initialized using the {@link Scanner} resources.
+	 */
+	public static Reflection of(final Scanner scanner) {
+		return new Reflection(scanner.getResources());
 	}
 	
 	/**
@@ -51,8 +56,8 @@ public class Reflection {
 	 */
 	public Set<ResourceMetadata> getSimpleResources() {
 		return getResources().stream()
-				.filter(res -> !(res instanceof ClassMetadata))
-				.collect(Collectors.toSet());
+			.filter(res -> !(res instanceof ClassMetadata))
+			.collect(Collectors.toSet());
 	}
 	
 	/**
@@ -60,29 +65,31 @@ public class Reflection {
 	 */
 	public Set<ClassMetadata> getClasses() {
 		return getResources().stream()
-				.filter(res -> res instanceof ClassMetadata)
-				.map(res -> (ClassMetadata)res)
-				.collect(Collectors.toSet());
+			.filter(ClassMetadata.class::isInstance)
+			.map(ClassMetadata.class::cast)
+			.collect(Collectors.toSet());
 	}
 	
 	/**
 	 * @param packageName The name of the target package.
+	 *
 	 * @return A set containing all the {@link ClassMetadata} in the provided package.
 	 */
-	public Set<ClassMetadata> getClasses(String packageName) {
+	public Set<ClassMetadata> getClasses(final String packageName) {
 		return getClasses().stream()
-				.filter(c -> c.getPackage().equals(packageName))
-				.collect(Collectors.toSet());
+			.filter(c -> c.getPackage().equals(packageName))
+			.collect(Collectors.toSet());
 	}
 	
 	/**
 	 * @param packagePrefix The prefix of all the targeted packages.
+	 *
 	 * @return A set containing all the {@link ClassMetadata} whose package name starts with {@code packagePrefix}.
 	 */
-	public Set<ClassMetadata> getClassesRecursively(String packagePrefix) {
+	public Set<ClassMetadata> getClassesRecursively(final String packagePrefix) {
 		return getClasses().stream()
-				.filter(c -> c.getPackage().startsWith(packagePrefix))
-				.collect(Collectors.toSet());
+			.filter(c -> c.getPackage().startsWith(packagePrefix))
+			.collect(Collectors.toSet());
 	}
 	
 	/**
@@ -91,28 +98,30 @@ public class Reflection {
 	 */
 	public Set<ClassMetadata> getTopLevelClasses() {
 		return getClasses().stream()
-				.filter(c -> c.getName().indexOf('$') == -1)
-				.collect(Collectors.toSet());
+			.filter(c -> c.getName().indexOf('$') == -1)
+			.collect(Collectors.toSet());
 	}
 	
 	/**
 	 * @param packageName The name of the target package.
+	 *
 	 * @return A set containing all the top level {@link ClassMetadata} in the provided package.
 	 */
-	public Set<ClassMetadata> getTopLevelClasses(String packageName) {
+	public Set<ClassMetadata> getTopLevelClasses(final String packageName) {
 		return getTopLevelClasses().stream()
-				.filter(c -> c.getPackage().equals(packageName))
-				.collect(Collectors.toSet());
+			.filter(c -> c.getPackage().equals(packageName))
+			.collect(Collectors.toSet());
 	}
 	
 	/**
 	 * @param packagePrefix The prefix of all the targeted packages.
+	 *
 	 * @return A set containing all the top level {@link ClassMetadata} whose package name starts with {@code packagePrefix}.
 	 */
-	public Set<ClassMetadata> getTopLevelClassesRecursively(String packagePrefix) {
+	public Set<ClassMetadata> getTopLevelClassesRecursively(final String packagePrefix) {
 		return getTopLevelClasses().stream()
-				.filter(c -> c.getPackage().startsWith(packagePrefix))
-				.collect(Collectors.toSet());
+			.filter(c -> c.getPackage().startsWith(packagePrefix))
+			.collect(Collectors.toSet());
 	}
 	
 	/**
@@ -120,119 +129,70 @@ public class Reflection {
 	 */
 	public Set<Class<?>> getTypes() {
 		return getClasses().stream()
-				.map(c -> {
-					try { return c.load(); }
-					catch(IllegalStateException e) { return null; }
-				}).filter(Objects::nonNull)
-				.collect(Collectors.toSet());
+			.map(ClassMetadata::load)
+			.filter(Optional::isPresent)
+			.map(Optional::get)
+			.collect(Collectors.toSet());
 	}
 	
 	/**
 	 * @param packageName The name of the target package.
+	 *
 	 * @return A {@link Set} of loaded types in the provided package.
 	 */
-	public Set<Class<?>> getTypes(String packageName) {
+	public Set<Class<?>> getTypes(final String packageName) {
 		return getClasses(packageName).stream()
-				.map(c -> {
-					try { return c.load(); }
-					catch(IllegalStateException e) { return null; }
-				}).filter(Objects::nonNull)
-				.collect(Collectors.toSet());
+			.map(ClassMetadata::load)
+			.filter(Optional::isPresent)
+			.map(Optional::get)
+			.collect(Collectors.toSet());
 	}
 	
 	/**
 	 * @param packagePrefix The prefix of all the targeted packages.
+	 *
 	 * @return A {@link Set} of loaded types whose package name starts with {@code packagePrefix}.
 	 */
-	public Set<Class<?>> getTypesRecursively(String packagePrefix) {
+	public Set<Class<?>> getTypesRecursively(final String packagePrefix) {
 		return getClassesRecursively(packagePrefix).stream()
-				.map(c -> {
-					try { return c.load(); }
-					catch(IllegalStateException e) { return null; }
-				}).filter(Objects::nonNull)
-				.collect(Collectors.toSet());
+			.map(ClassMetadata::load)
+			.filter(Optional::isPresent)
+			.map(Optional::get)
+			.collect(Collectors.toSet());
 	}
 	
 	/**
 	 * @param annotation The Annotation class that must be present in the returned types.
+	 *
 	 * @return A {@link Set} of loaded types all annotated with the provided {@code annotation}.
 	 */
-	public Set<Class<?>> getAnnotatedTypes(Class<? extends Annotation> annotation) {
+	public Set<Class<?>> getAnnotatedTypes(final Class<? extends Annotation> annotation) {
 		return getTypes().stream()
-				.filter(c -> c.isAnnotationPresent(annotation))
-				.collect(Collectors.toSet());
+			.filter(c -> c.isAnnotationPresent(annotation))
+			.collect(Collectors.toSet());
 	}
 	
 	/**
-	 * @param annotation The Annotation class that must be present in the returned types.
+	 * @param annotation  The Annotation class that must be present in the returned types.
 	 * @param packageName The name of the target package.
+	 *
 	 * @return A {@link Set} of loaded types in the provided package and annotated with {@code annotation}.
 	 */
-	public Set<Class<?>> getAnnotatedTypes(Class<? extends Annotation> annotation, String packageName) {
+	public Set<Class<?>> getAnnotatedTypes(final Class<? extends Annotation> annotation, final String packageName) {
 		return getTypes(packageName).stream()
-				.filter(c -> c.isAnnotationPresent(annotation))
-				.collect(Collectors.toSet());
+			.filter(c -> c.isAnnotationPresent(annotation))
+			.collect(Collectors.toSet());
 	}
 	
 	/**
-	 * @param annotation The Annotation class that must be present in the returned types.
+	 * @param annotation    The Annotation class that must be present in the returned types.
 	 * @param packagePrefix The prefix of all the targeted packages.
+	 *
 	 * @return A {@link Set} of loaded types whose package name starts with {@code packagePrefix} and are annotated with {@code annotation}.
 	 */
-	public Set<Class<?>> getAnnotatedTypesRecursively(Class<? extends Annotation> annotation, String packagePrefix) {
+	public Set<Class<?>> getAnnotatedTypesRecursively(final Class<? extends Annotation> annotation, final String packagePrefix) {
 		return getTypesRecursively(packagePrefix).stream()
-				.filter(c -> c.isAnnotationPresent(annotation))
-				.collect(Collectors.toSet());
-	}
-	
-	/**
-	 * @param classLoader The base {@link ClassLoader} from which the reflection process will begin.
-	 * @return A {@link Builder} object used for the configuration of the reflection process.
-	 */
-	public static Builder of(ClassLoader classLoader) {
-		return new Builder(classLoader);
-	}
-	
-	/**
-	 * Configuration object for the {@link Reflection} class.
-	 *
-	 * @version 1.0
-	 * @since 1.0
-	 */
-	public static class Builder {
-		
-		private final ClassLoader classLoader;
-		private final Set<Filter> filters;
-		
-		/**
-		 * @param classLoader The mandatory {@link ClassLoader} object.
-		 */
-		private Builder(ClassLoader classLoader) {
-			if(classLoader == null)
-				throw new IllegalArgumentException("ClassLoader cannot be null.");
-			
-			this.classLoader = classLoader;
-			this.filters = new HashSet<>();
-		}
-		
-		/**
-		 * @param filter A filter to apply on the scanned resources.
-		 * @return This {@link Builder} instance.
-		 */
-		public Builder filter(Filter filter) {
-			filters.add(filter);
-			return this;
-		}
-		
-		/**
-		 * Create a new {@link ClassPathScanner} to proceed with the effective reflection.
-		 * @return Return the resulting {@link Reflection} object.
-		 */
-		public Reflection scan() {
-			ClassPathScanner classPathScanner = new ClassPathScanner(classLoader, filters);
-			classPathScanner.run();
-			
-			return new Reflection(classPathScanner.getResources());
-		}
+			.filter(c -> c.isAnnotationPresent(annotation))
+			.collect(Collectors.toSet());
 	}
 }

@@ -2,6 +2,8 @@ package io.fries.reflection.metadata;
 
 import org.junit.Test;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ClassMetadataTest {
@@ -12,56 +14,58 @@ public class ClassMetadataTest {
 	
 	@Test
 	public void getName() {
-		ClassMetadata classMetadata = new ClassMetadata(CLASS_NAME, null);
+		final ClassMetadata classMetadata = new ClassMetadata(CLASS_NAME, null);
 		
-		String className = classMetadata.getName();
+		final String className = classMetadata.getName();
 		
 		assertThat(className).isEqualTo("com.example.handlers.DefaultHandler");
 	}
 	
 	@Test
 	public void getNameOfInnerClass() {
-		ClassMetadata classMetadata = new ClassMetadata(INNER_CLASS_NAME, null);
+		final ClassMetadata classMetadata = new ClassMetadata(INNER_CLASS_NAME, null);
 		
-		String className = classMetadata.getName();
+		final String className = classMetadata.getName();
 		
 		assertThat(className).isEqualTo("com.example.handlers.DefaultHandler$Builder");
 	}
 	
 	@Test
 	public void getPackage() {
-		ClassMetadata classMetadata = new ClassMetadata(CLASS_NAME, null);
+		final ClassMetadata classMetadata = new ClassMetadata(CLASS_NAME, null);
 		
-		String classPackage = classMetadata.getPackage();
+		final String classPackage = classMetadata.getPackage();
 		
 		assertThat(classPackage).isEqualTo("com.example.handlers");
 	}
 	
 	@Test
 	public void getSimpleName() {
-		ClassMetadata classMetadata = new ClassMetadata(CLASS_NAME, null);
+		final ClassMetadata classMetadata = new ClassMetadata(CLASS_NAME, null);
 		
-		String simpleName = classMetadata.getSimpleName();
+		final String simpleName = classMetadata.getSimpleName();
 		
 		assertThat(simpleName).isEqualTo("DefaultHandler");
 	}
 	
 	@Test
 	public void getSimpleNameOfInnerClass() {
-		ClassMetadata classMetadata = new ClassMetadata(INNER_CLASS_NAME, null);
+		final ClassMetadata classMetadata = new ClassMetadata(INNER_CLASS_NAME, null);
 		
-		String simpleName = classMetadata.getSimpleName();
+		final String simpleName = classMetadata.getSimpleName();
 		
 		assertThat(simpleName).isEqualTo("Builder");
 	}
 	
 	@Test
+	@SuppressWarnings("ConstantConditions")
 	public void load() {
-		ClassMetadata classMetadata = new ClassMetadata(LOADABLE_CLASS, Thread.currentThread().getContextClassLoader());
+		final ClassMetadata classMetadata = new ClassMetadata(LOADABLE_CLASS, Thread.currentThread().getContextClassLoader());
 		
-		Class<?> capture = classMetadata.load();
+		final Optional<Class<?>> capture = classMetadata.load();
 		
-		assertThat(capture.getSimpleName()).isEqualTo("ClassMetadata");
-		assertThat(capture.getPackage().getName()).isEqualTo("io.fries.reflection.metadata");
+		assertThat(capture).isPresent();
+		assertThat(capture.get().getSimpleName()).isEqualTo("ClassMetadata");
+		assertThat(capture.get().getPackage().getName()).isEqualTo("io.fries.reflection.metadata");
 	}
 }
