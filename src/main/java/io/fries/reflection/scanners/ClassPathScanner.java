@@ -46,6 +46,10 @@ public final class ClassPathScanner implements Scanner {
 	}
 	
 	/**
+	 * @param classLoader The base {@link ClassLoader} for which the {@link ClassPathScanner} has been called.
+	 *
+	 * @return A new {@link ClassPathScanner} instance.
+	 *
 	 * @see ClassPathScanner#ClassPathScanner(ClassLoader)
 	 */
 	public static ClassPathScanner of(final ClassLoader classLoader) {
