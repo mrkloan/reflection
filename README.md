@@ -1,4 +1,7 @@
 # reflection
+> A lightweight and easy to use runtime reflection library. 
+
+[![Build Status](https://travis-ci.org/MrKloan/reflection.svg?branch=master)](https://travis-ci.org/MrKloan/reflection)
 
 `reflection` is a lightweight and easy to use library allowing you to scan the content of a `ClassLoader`'s
 classpath at runtime.
