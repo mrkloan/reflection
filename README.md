@@ -2,6 +2,7 @@
 > A lightweight and easy to use runtime reflection library. 
 
 [![Build Status](https://travis-ci.org/MrKloan/reflection.svg?branch=master)](https://travis-ci.org/MrKloan/reflection)
+[![Javadoc](https://img.shields.io/badge/docs-Javadoc-blue.svg)](https://mrkloan.github.io/reflection/index.html)
 
 `reflection` is a lightweight and easy to use library allowing you to scan the content of a `ClassLoader`'s
 classpath at runtime.
