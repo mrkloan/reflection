@@ -7,7 +7,9 @@ package io.fries.reflection.filters;
  * @since 1.0
  */
 public class PackageFilter implements Filter {
-	
+
+	private static final int NOT_FOUND = -1;
+
 	private final Mode mode;
 	private final String packageName;
 	
@@ -36,10 +38,13 @@ public class PackageFilter implements Filter {
 	@Override
 	public boolean accept(final ClassLoader classLoader, final String resourceName) {
 		final int lastSeparator = resourceName.lastIndexOf('/');
-		
+		final boolean separatorNotFound = lastSeparator == NOT_FOUND;
+
 		if(packageName.isEmpty())
-			return lastSeparator == -1;
-		
+			return separatorNotFound;
+		if(separatorNotFound)
+			return false;
+
 		final String resourcePackage = resourceName.substring(0, lastSeparator).replace('/', '.');
 		
 		return mode == Mode.STRICT

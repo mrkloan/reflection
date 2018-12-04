@@ -46,4 +46,13 @@ public class PackageFilterTest {
 		
 		assertThat(accepted).isTrue();
 	}
+
+	@Test
+	public void should_not_accept_a_resource_from_a_parent_package() {
+		final Filter filter = PackageFilter.of("com.example");
+
+		final boolean accepted = filter.accept(null, "resource.properties");
+
+		assertThat(accepted).isFalse();
+	}
 }
